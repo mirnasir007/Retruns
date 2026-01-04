@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retruns Management</title>
-  <link rel="icon" type="image/png" href="logo.png">
+    <title>Returns Management</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,18 +14,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         /* 100% Wide & 80% Zoom Scaling */
-        html {
-            width: 100%;
-            height: 100%;
-        }
+        html { width: 100%; height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-            width: 125%; /* 100 / 0.8 = 125% to fill screen after scale down */
+            width: 125%; 
             height: 125%;
             transform: scale(0.8);
             transform-origin: top left;
-            overflow-x: hidden; /* Prevent horiz scroll due to width hack */
+            overflow-x: hidden; 
         }
 
         /* Custom Loader */
@@ -44,8 +43,6 @@
         /* Table Styling */
         .table-container { max-height: 600px; overflow-y: auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; }
         thead th { position: sticky; top: 0; z-index: 10; background-color: #1f2937; color: white; }
-        
-        /* Alternating row colors */
         tbody tr:nth-child(even) { background-color: #f9fafb; }
         tbody tr:hover { background-color: #e5e7eb; }
     </style>
@@ -54,18 +51,16 @@
 
     <!-- CONFIGURATION -->
     <script>
-        // ⚠️ UPDATED API URL
+        // ⚠️ DEPLOY NEW WEB APP & PASTE URL HERE
         const API_URL = "https://script.google.com/macros/s/AKfycbxBJblD5jbzoQBK7jXNMsxZIxgPFwrP52ZGr5pursK_BWc_AVoxDFR7Qsd4SNe9sLqsJw/exec"; 
     </script>
 
     <!-- Navbar -->
     <nav class="bg-white shadow-md border-b border-gray-200">
         <div class="w-full px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fa-solid fa-truck-fast text-blue-600 text-2xl mr-3"></i>
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Retruns Management <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2">v2.1</span></h1>
-                </div>
+            <div class="flex items-center">
+                <i class="fa-solid fa-boxes-packing text-blue-600 text-2xl mr-3"></i>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Returns Management</h1>
             </div>
         </div>
     </nav>
@@ -75,12 +70,8 @@
         
         <!-- Tabs -->
         <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm">
-            <button id="tab-update" class="flex-1 py-4 text-center text-lg tab-active transition-all duration-200" onclick="switchTab('update')">
-                <i class="fa-solid fa-pen-to-square mr-2"></i> Update Order
-            </button>
-            <button id="tab-view" class="flex-1 py-4 text-center text-lg tab-inactive transition-all duration-200" onclick="switchTab('view')">
-                <i class="fa-solid fa-table-list mr-2"></i> View Sheet Data
-            </button>
+            <button id="tab-update" class="flex-1 py-4 text-center text-lg tab-active transition-all duration-200" onclick="switchTab('update')">Update Order</button>
+            <button id="tab-view" class="flex-1 py-4 text-center text-lg tab-inactive transition-all duration-200" onclick="switchTab('view')">View Sheet Data</button>
         </div>
 
         <!-- Global Loader -->
@@ -94,47 +85,28 @@
 
         <!-- SECTION 1: UPDATE ORDER -->
         <div id="section-update" class="space-y-6 max-w-5xl mx-auto">
-            
-            <!-- Search Card -->
             <div class="bg-white shadow-md rounded-lg p-8 border border-gray-100">
                 <label class="block text-base font-semibold text-gray-700 mb-3">Search Order ID</label>
                 <div class="flex gap-3">
-                    <input type="text" id="orderIdInput" class="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base p-3 border" placeholder="Enter ID (e.g. 0225...)">
-                    <button onclick="searchOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md font-bold transition shadow-sm flex items-center">
-                        <i class="fa-solid fa-search mr-2"></i> Search
-                    </button>
+                    <input type="text" id="orderIdInput" class="flex-1 block w-full rounded-md border-gray-300 shadow-sm text-base p-3 border" placeholder="Enter ID...">
+                    <button onclick="searchOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md font-bold shadow-sm">Search</button>
                 </div>
             </div>
 
             <!-- Result Card -->
             <div id="result-card" class="hidden bg-white shadow-md rounded-lg p-8 border-t-4 border-blue-500">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Customer</p>
-                        <p class="font-bold text-gray-900 text-lg truncate" id="res-name">-</p>
-                    </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Phone</p>
-                        <p class="font-bold text-gray-900 text-lg" id="res-phone">-</p>
-                    </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Amount</p>
-                        <p class="font-bold text-gray-900 text-lg" id="res-amount">-</p>
-                    </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Current Status</p>
-                        <p class="font-bold text-red-600 text-lg" id="res-status">-</p>
-                    </div>
+                    <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Customer</p><p class="font-bold text-lg truncate" id="res-name">-</p></div>
+                    <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Phone</p><p class="font-bold text-lg" id="res-phone">-</p></div>
+                    <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Amount</p><p class="font-bold text-lg" id="res-amount">-</p></div>
+                    <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Current Status</p><p class="font-bold text-red-600 text-lg" id="res-status">-</p></div>
                 </div>
-
                 <hr class="border-gray-200 mb-8">
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Left Col -->
                     <div class="space-y-5">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">New Status</label>
-                            <select id="status-select" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border bg-white">
+                            <select id="status-select" class="block w-full rounded-md border p-3 bg-white">
                                 <option value="Returned">Returned</option>
                                 <option value="Partial Delivery">Partial Delivery</option>
                                 <option value="Delivered">Delivered</option>
@@ -143,27 +115,18 @@
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Save To (Destination)</label>
-                            <select id="dest-sheet-select" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border bg-white">
-                                <option value="">Loading sheets...</option>
-                            </select>
+                            <select id="dest-sheet-select" class="block w-full rounded-md border p-3 bg-white"><option value="">Loading...</option></select>
                         </div>
                     </div>
-
-                    <!-- Right Col -->
                     <div class="space-y-5">
                         <div>
                             <div class="flex justify-between items-end mb-2">
                                 <label class="block text-sm font-semibold text-gray-700">Void Amount</label>
-                                <button onclick="copyAmount()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded font-medium transition">
-                                    <i class="fa-solid fa-copy mr-1"></i> Copy Order Amount
-                                </button>
+                                <button onclick="copyAmount()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">Copy Order Amount</button>
                             </div>
-                            <input type="number" id="void-amount" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border" value="0">
+                            <input type="number" id="void-amount" class="block w-full rounded-md border p-3" value="0">
                         </div>
-                        
-                        <button onclick="updateStatus()" id="btn-save" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 mt-4 rounded-md transition shadow-md flex justify-center items-center text-lg">
-                            <i class="fa-solid fa-floppy-disk mr-2"></i> Update & Save
-                        </button>
+                        <button onclick="updateStatus()" id="btn-save" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 mt-4 rounded-md shadow-md text-lg">Update & Save</button>
                     </div>
                 </div>
             </div>
@@ -171,45 +134,37 @@
 
         <!-- SECTION 2: VIEW DATA -->
         <div id="section-view" class="hidden space-y-6 w-full">
-            
             <!-- Controls -->
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Sheet</label>
-                    <select id="view-sheet-select" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border">
-                        <option value="">Select Sheet...</option>
-                    </select>
+                    <select id="view-sheet-select" class="block w-full rounded-md border p-3"><option value="">Select Sheet...</option></select>
                 </div>
-                
-                <!-- NEW: Date Filter -->
                 <div class="md:col-span-1">
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Date</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Date (Optional)</label>
                      <div class="flex gap-2">
-                         <input type="date" id="date-filter" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border" onchange="applyFilters()">
-                         <button onclick="resetFilters()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-3 rounded-md" title="Reset Filter">
-                             <i class="fa-solid fa-times"></i>
-                         </button>
+                         <input type="date" id="date-filter" class="block w-full rounded-md border p-3">
+                         <button onclick="resetFilters()" class="bg-gray-200 hover:bg-gray-300 px-3 py-3 rounded-md"><i class="fa-solid fa-times"></i></button>
                      </div>
                 </div>
-
                 <div class="md:col-span-1">
-                    <button onclick="loadSheetData()" class="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-md font-bold transition shadow-sm h-[48px] md:h-[50px]">
+                    <button onclick="loadSheetData()" class="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-md font-bold h-[50px]">
                         <i class="fa-solid fa-rotate mr-2"></i> Load Data
                     </button>
                 </div>
             </div>
 
-            <!-- Stats Card (UPDATED) -->
+            <!-- Stats Card -->
             <div id="stats-card" class="hidden bg-white shadow-md rounded-lg p-5 border-l-4 border-red-500 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center">
                     <i class="fa-solid fa-calendar-day text-gray-400 text-xl mr-3"></i>
                     <div>
-                        <span class="text-sm text-gray-500 font-bold uppercase tracking-wide">Showing Total For:</span>
-                        <div id="stats-date-label" class="text-lg font-semibold text-gray-900">All Dates</div>
+                        <span class="text-sm text-gray-500 font-bold uppercase tracking-wide">Showing Data For:</span>
+                        <div id="stats-date-label" class="text-lg font-semibold text-gray-900">Last 50 Records</div>
                     </div>
                 </div>
                 <div class="text-right">
-                    <span class="block text-sm text-gray-500 font-bold uppercase tracking-wide">Total Void Amount</span>
+                    <span class="block text-sm text-gray-500 font-bold uppercase tracking-wide">Total Void (Visible)</span>
                     <span id="void-total-display" class="text-3xl font-extrabold text-red-600">0</span>
                 </div>
             </div>
@@ -220,7 +175,6 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-800 text-white">
                             <tr>
-                                <!-- Requested Headers -->
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">#</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Receive Date</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Order ID</th>
@@ -231,336 +185,192 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider bg-red-900">Void Amount</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="bg-white divide-y divide-gray-200 text-sm">
-                            <!-- Rows injected here -->
-                        </tbody>
+                        <tbody id="table-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
                     </table>
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- JAVASCRIPT -->
     <script>
         let currentOrder = null;
-        let fetchedSheetData = []; // Store raw data for filtering
 
-        // --- CORE API FUNCTION ---
         async function callApi(action, payload = {}) {
             payload.action = action;
             try {
                 const response = await fetch(API_URL, {
-                    method: "POST",
-                    mode: "cors", 
-                    headers: {
-                        "Content-Type": "text/plain;charset=utf-8", 
-                    },
+                    method: "POST", mode: "cors", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
                 return await response.json();
-            } catch (error) {
-                console.error("API Error:", error);
-                throw error;
-            }
+            } catch (error) { throw error; }
         }
 
-        // --- INIT ---
-        window.onload = function() {
-            if(API_URL.includes("PASTE_YOUR")) {
-                showMsg("⚠️ Please configure the API_URL in the HTML code!", "error");
-                return;
-            }
-            loadSheetNames();
-        };
+        window.onload = function() { loadSheetNames(); };
 
-        // --- TABS ---
         function switchTab(tab) {
             const updateSec = document.getElementById('section-update');
             const viewSec = document.getElementById('section-view');
             const tabUpdate = document.getElementById('tab-update');
             const tabView = document.getElementById('tab-view');
-
             if (tab === 'update') {
-                updateSec.classList.remove('hidden');
-                viewSec.classList.add('hidden');
-                tabUpdate.className = "flex-1 py-4 text-center text-lg tab-active transition-all duration-200";
-                tabView.className = "flex-1 py-4 text-center text-lg tab-inactive transition-all duration-200";
+                updateSec.classList.remove('hidden'); viewSec.classList.add('hidden');
+                tabUpdate.classList.add('tab-active'); tabView.classList.remove('tab-active');
+                tabUpdate.classList.remove('tab-inactive'); tabView.classList.add('tab-inactive');
             } else {
-                updateSec.classList.add('hidden');
-                viewSec.classList.remove('hidden');
-                tabUpdate.className = "flex-1 py-4 text-center text-lg tab-inactive transition-all duration-200";
-                tabView.className = "flex-1 py-4 text-center text-lg tab-active transition-all duration-200";
+                updateSec.classList.add('hidden'); viewSec.classList.remove('hidden');
+                tabUpdate.classList.remove('tab-active'); tabView.classList.add('tab-active');
+                tabUpdate.classList.add('tab-inactive'); tabView.classList.remove('tab-inactive');
             }
         }
 
-        // --- LOAD SHEETS ---
         async function loadSheetNames() {
             try {
                 const res = await callApi('getSheets');
                 if(res.success) {
-                    const updateSelect = document.getElementById('dest-sheet-select');
-                    const viewSelect = document.getElementById('view-sheet-select');
-                    
-                    let optionsHtml = '<option value="">Select Sheet...</option>';
-                    res.data.forEach(s => {
-                        optionsHtml += `<option value="${s.spreadsheetId}###${s.name}">${s.name}</option>`;
-                    });
-
-                    updateSelect.innerHTML = optionsHtml;
-                    viewSelect.innerHTML = optionsHtml;
+                    const opts = '<option value="">Select Sheet...</option>' + 
+                        res.data.map(s => `<option value="${s.spreadsheetId}###${s.name}">${s.name}</option>`).join('');
+                    document.getElementById('dest-sheet-select').innerHTML = opts;
+                    document.getElementById('view-sheet-select').innerHTML = opts;
                 }
-            } catch(e) {
-                showMsg("Failed to load sheets. Check API URL.", "error");
-            }
+            } catch(e) { showMsg("Failed to load sheets.", "error"); }
         }
 
-        // --- SEARCH ---
         async function searchOrder() {
             const id = document.getElementById('orderIdInput').value;
             if(!id) return showMsg("Please enter an ID", "error");
-
-            toggleLoader(true);
-            document.getElementById('result-card').classList.add('hidden');
-            
+            toggleLoader(true); document.getElementById('result-card').classList.add('hidden');
             try {
                 const res = await callApi('search', { id: id });
                 toggleLoader(false);
-
                 if(res.success) {
                     currentOrder = res.data;
                     document.getElementById('res-name').innerText = currentOrder.name || '-';
                     document.getElementById('res-phone').innerText = currentOrder.phone || '-';
                     document.getElementById('res-amount').innerText = currentOrder.amount || '-';
                     document.getElementById('res-status').innerText = currentOrder.status || '-';
-                    
                     document.getElementById('result-card').classList.remove('hidden');
                     document.getElementById('status-select').value = 'Returned';
                     document.getElementById('void-amount').value = 0;
-                } else {
-                    showMsg(res.message, "error");
-                }
-            } catch(e) {
-                toggleLoader(false);
-                showMsg("Search Failed. Network Error.", "error");
-            }
+                } else { showMsg(res.message, "error"); }
+            } catch(e) { toggleLoader(false); showMsg("Search Failed.", "error"); }
         }
 
-        // --- UPDATE ---
         async function updateStatus() {
             if(!currentOrder) return;
             const destVal = document.getElementById('dest-sheet-select').value;
-            if(!destVal) return showMsg("Please select a Destination Sheet", "error");
-
+            if(!destVal) return showMsg("Select Destination Sheet", "error");
             const [destId, destName] = destVal.split('###');
-            const newStatus = document.getElementById('status-select').value;
-            const voidAmt = document.getElementById('void-amount').value;
-
             const payload = {
-                sheetName: currentOrder.sheet,
-                rowNum: currentOrder.rowNum,
-                newStatus: newStatus,
+                sheetName: currentOrder.sheet, rowNum: currentOrder.rowNum,
+                newStatus: document.getElementById('status-select').value,
                 orderId: document.getElementById('orderIdInput').value,
                 spreadsheetId: currentOrder.spreadsheetId,
-                destinationSheetName: destName,
-                destinationSpreadsheetId: destId,
-                voidAmount: voidAmt,
-                customerName: currentOrder.name,
-                phone: currentOrder.phone,
-                amount: currentOrder.amount
+                destinationSheetName: destName, destinationSpreadsheetId: destId,
+                voidAmount: document.getElementById('void-amount').value,
+                customerName: currentOrder.name, phone: currentOrder.phone, amount: currentOrder.amount
             };
-
             toggleLoader(true);
-            const btn = document.getElementById('btn-save');
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-
             try {
                 const res = await callApi('update', payload);
                 toggleLoader(false);
-                btn.disabled = false;
-                btn.classList.remove('opacity-50');
-
                 if(res.success) {
                     showMsg(res.message, "success");
-                    document.getElementById('res-status').innerText = newStatus;
-                } else {
-                    showMsg(res.message, "error");
-                }
-            } catch(e) {
-                toggleLoader(false);
-                btn.disabled = false;
-                showMsg("Update Failed. Network Error.", "error");
-            }
+                    document.getElementById('res-status').innerText = payload.newStatus;
+                } else { showMsg(res.message, "error"); }
+            } catch(e) { toggleLoader(false); showMsg("Update Failed.", "error"); }
         }
 
-        // --- VIEW DATA ---
         async function loadSheetData() {
             const val = document.getElementById('view-sheet-select').value;
             if(!val) return showMsg("Select a sheet first", "error");
-
             const [destId, destName] = val.split('###');
+            const dateInput = document.getElementById('date-filter').value;
+
             toggleLoader(true);
             document.getElementById('data-container').classList.add('hidden');
             document.getElementById('stats-card').classList.add('hidden');
 
             try {
-                const res = await callApi('getData', { spreadsheetId: destId, sheetName: destName });
+                // Send date to server for fast filtering
+                const res = await callApi('getData', { spreadsheetId: destId, sheetName: destName, date: dateInput });
                 toggleLoader(false);
 
                 if(res.success) {
-                    fetchedSheetData = res.data; // STORE DATA
-                    applyFilters(); // Render with filters
+                    renderTable(res.data);
+                    
+                    // Update Stats Label
+                    const lbl = document.getElementById('stats-date-label');
+                    if(res.filterApplied && dateInput) {
+                        lbl.innerText = new Date(dateInput).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    } else {
+                        lbl.innerText = "Last 50 Records (Most Recent)";
+                    }
+
                     document.getElementById('data-container').classList.remove('hidden');
                     document.getElementById('stats-card').classList.remove('hidden');
-                } else {
-                    showMsg(res.message, "error");
-                }
-            } catch(e) {
-                toggleLoader(false);
-                showMsg("Failed to load data.", "error");
-            }
-        }
-
-        // --- FILTERING LOGIC ---
-        function applyFilters() {
-            const dateInput = document.getElementById('date-filter').value; // yyyy-mm-dd
-            const statsLabel = document.getElementById('stats-date-label');
-            
-            let filteredData = fetchedSheetData;
-
-            if (dateInput) {
-                // Filter rows where Date (Col A / Index 0) matches input
-                filteredData = fetchedSheetData.filter(row => {
-                    const sheetDate = parseSheetDate(row[0]); // Convert "4-Jan-26" to "2026-01-04"
-                    return sheetDate === dateInput;
-                });
-                // Update Label
-                const dateObj = new Date(dateInput);
-                statsLabel.innerText = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-            } else {
-                statsLabel.innerText = "All Dates";
-            }
-
-            renderTable(filteredData);
+                } else { showMsg(res.message, "error"); }
+            } catch(e) { toggleLoader(false); showMsg("Failed to load data.", "error"); }
         }
 
         function resetFilters() {
             document.getElementById('date-filter').value = '';
-            applyFilters();
-        }
-
-        // Helper: Convert "4-Jan-26" (Sheet Format) to "2026-01-04" (Input Format)
-        function parseSheetDate(dateStr) {
-            if (!dateStr) return null;
-            // Expected: "d-MMM-yy" e.g., "4-Jan-26"
-            const months = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
-            const parts = dateStr.split('-');
-            
-            if(parts.length !== 3) return null;
-            
-            const day = parseInt(parts[0]);
-            const monthStr = parts[1].toLowerCase();
-            const year = parseInt(parts[2]) + 2000; // Adjust century if needed
-            
-            const month = months[monthStr];
-            if(month === undefined) return null;
-            
-            // Format to yyyy-mm-dd
-            const m = (month + 1).toString().padStart(2, '0');
-            const d = day.toString().padStart(2, '0');
-            return `${year}-${m}-${d}`;
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
-
             let totalVoid = 0;
 
             if(!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-500">No Data Found for this Date</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-500">No Data Found</td></tr>';
                 document.getElementById('void-total-display').innerText = "0";
                 return;
             }
 
             data.forEach((row, index) => {
                 const tr = document.createElement('tr');
-                
-                // Parse Void Amount for Total
-                const voidVal = parseFloat(row[6]) || 0; // Index 6 is Void Amount (Col G)
+                const voidVal = parseFloat(row[6]) || 0;
                 totalVoid += voidVal;
 
-                // 1. #
                 const td1 = document.createElement('td');
                 td1.className = "px-6 py-4 whitespace-nowrap font-medium text-gray-500";
                 td1.innerHTML = `<span class="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">${index+1}</span>`;
                 tr.appendChild(td1);
 
-                // 2. Receive Date (Col A / Index 0)
-                createCell(tr, row[0]);
-                
-                // 3. Order ID (Col B / Index 1)
-                createCell(tr, row[1], "font-bold text-gray-900");
+                [row[0], row[1], row[2], row[3], row[4]].forEach((txt, i) => {
+                    const td = document.createElement('td');
+                    td.className = `px-6 py-4 whitespace-nowrap text-gray-700 ${i===1?'font-bold text-gray-900':''}`;
+                    td.innerText = txt || '-';
+                    tr.appendChild(td);
+                });
 
-                // 4. Name (Col C / Index 2)
-                createCell(tr, row[2]);
-
-                // 5. Number (Col D / Index 3)
-                createCell(tr, row[3]);
-
-                // 6. Amount (Col E / Index 4)
-                createCell(tr, row[4]);
-
-                // 7. Status (Col F / Index 5)
                 const status = row[5] || '';
-                let statusClass = "text-gray-900";
-                if(status === 'Returned') statusClass = "text-red-600 font-bold bg-red-50 px-2 py-1 rounded";
-                else if(status === 'Delivered') statusClass = "text-green-600 font-bold bg-green-50 px-2 py-1 rounded";
-                
-                const tdStatus = document.createElement('td');
-                tdStatus.className = "px-6 py-4 whitespace-nowrap";
-                tdStatus.innerHTML = `<span class="${statusClass}">${status}</span>`;
-                tr.appendChild(tdStatus);
+                let stClass = "text-gray-900";
+                if(status === 'Returned') stClass = "text-red-600 font-bold bg-red-50 px-2 py-1 rounded";
+                else if(status === 'Delivered') stClass = "text-green-600 font-bold bg-green-50 px-2 py-1 rounded";
+                const tdS = document.createElement('td'); tdS.className="px-6 py-4 whitespace-nowrap";
+                tdS.innerHTML = `<span class="${stClass}">${status}</span>`;
+                tr.appendChild(tdS);
 
-                // 8. Void Amount (Col G / Index 6)
-                createCell(tr, row[6], "font-bold text-red-600 bg-red-50");
+                const tdV = document.createElement('td');
+                tdV.className = "px-6 py-4 whitespace-nowrap font-bold text-red-600 bg-red-50";
+                tdV.innerText = row[6] || '-';
+                tr.appendChild(tdV);
 
                 tbody.appendChild(tr);
             });
-
-            // Update Total
             document.getElementById('void-total-display').innerText = totalVoid.toLocaleString();
         }
 
-        function createCell(tr, text, extraClasses = "text-gray-700") {
-            const td = document.createElement('td');
-            td.className = `px-6 py-4 whitespace-nowrap ${extraClasses}`;
-            td.innerText = text || '-';
-            tr.appendChild(td);
-        }
-
-        // --- UTILS ---
-        function copyAmount() {
-            if(currentOrder) document.getElementById('void-amount').value = currentOrder.amount;
-        }
-
-        function toggleLoader(show) {
-            const l = document.getElementById('global-loader');
-            if(show) l.classList.remove('hidden');
-            else l.classList.add('hidden');
-        }
-
-        function showMsg(msg, type) {
+        function copyAmount() { if(currentOrder) document.getElementById('void-amount').value = currentOrder.amount; }
+        function toggleLoader(s) { document.getElementById('global-loader').classList.toggle('hidden', !s); }
+        function showMsg(m, t) {
             const el = document.getElementById('status-msg');
-            el.innerText = msg;
-            el.className = "hidden mb-6 p-4 rounded-md text-base font-medium text-center shadow-sm"; // Reset
-            el.classList.remove('hidden');
-            
-            if(type === 'success') el.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-200');
-            else el.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-200');
-
-            setTimeout(() => el.classList.add('hidden'), 5000);
+            el.innerText = m; el.className = `hidden mb-6 p-4 rounded-md text-base font-medium text-center shadow-sm ${t==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`;
+            el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),5000);
         }
     </script>
 </body>
