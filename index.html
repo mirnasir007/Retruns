@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Returns Management</title>
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -49,13 +47,11 @@
 </head>
 <body class="text-gray-800">
 
-    <!-- CONFIGURATION -->
     <script>
         // ⚠️ DEPLOY NEW WEB APP & PASTE URL HERE
         const API_URL = "https://script.google.com/macros/s/AKfycbxBJblD5jbzoQBK7jXNMsxZIxgPFwrP52ZGr5pursK_BWc_AVoxDFR7Qsd4SNe9sLqsJw/exec"; 
     </script>
 
-    <!-- Navbar -->
     <nav class="bg-white shadow-md border-b border-gray-200">
         <div class="w-full px-6 py-4">
             <div class="flex items-center">
@@ -65,25 +61,20 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="w-full px-6 py-6">
         
-        <!-- Tabs -->
         <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm">
             <button id="tab-update" class="flex-1 py-4 text-center text-lg tab-active transition-all duration-200" onclick="switchTab('update')">Update Order</button>
             <button id="tab-view" class="flex-1 py-4 text-center text-lg tab-inactive transition-all duration-200" onclick="switchTab('view')">View Sheet Data</button>
         </div>
 
-        <!-- Global Loader -->
         <div id="global-loader" class="hidden flex justify-center py-6">
             <div class="loader"></div>
             <span class="ml-3 text-gray-600 font-medium self-center">Processing...</span>
         </div>
 
-        <!-- Global Status Message -->
         <div id="status-msg" class="hidden mb-6 p-4 rounded-md text-base font-medium text-center shadow-sm"></div>
 
-        <!-- SECTION 1: UPDATE ORDER -->
         <div id="section-update" class="space-y-6 max-w-5xl mx-auto">
             <div class="bg-white shadow-md rounded-lg p-8 border border-gray-100">
                 <label class="block text-base font-semibold text-gray-700 mb-3">Search Order ID</label>
@@ -93,7 +84,6 @@
                 </div>
             </div>
 
-            <!-- Result Card -->
             <div id="result-card" class="hidden bg-white shadow-md rounded-lg p-8 border-t-4 border-blue-500">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                     <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500 font-bold uppercase mb-1">Customer</p><p class="font-bold text-lg truncate" id="res-name">-</p></div>
@@ -132,9 +122,7 @@
             </div>
         </div>
 
-        <!-- SECTION 2: VIEW DATA -->
         <div id="section-view" class="hidden space-y-6 w-full">
-            <!-- Controls -->
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Sheet</label>
@@ -148,19 +136,18 @@
                      </div>
                 </div>
                 <div class="md:col-span-1">
-                    <button onclick="loadSheetData()" class="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-md font-bold h-[50px]">
+                    <button onclick="initLoadData()" class="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-md font-bold h-[50px]">
                         <i class="fa-solid fa-rotate mr-2"></i> Load Data
                     </button>
                 </div>
             </div>
 
-            <!-- Stats Card -->
             <div id="stats-card" class="hidden bg-white shadow-md rounded-lg p-5 border-l-4 border-red-500 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center">
                     <i class="fa-solid fa-calendar-day text-gray-400 text-xl mr-3"></i>
                     <div>
-                        <span class="text-sm text-gray-500 font-bold uppercase tracking-wide">Showing Data For:</span>
-                        <div id="stats-date-label" class="text-lg font-semibold text-gray-900">Last 50 Records</div>
+                        <span class="text-sm text-gray-500 font-bold uppercase tracking-wide">Showing Data:</span>
+                        <div id="stats-date-label" class="text-lg font-semibold text-gray-900">Recent Records</div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -169,7 +156,6 @@
                 </div>
             </div>
 
-            <!-- Table -->
             <div id="data-container" class="hidden bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
                 <div class="table-container">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -188,13 +174,19 @@
                         <tbody id="table-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
                     </table>
                 </div>
+                <div id="load-more-container" class="hidden text-center py-4 bg-gray-50 border-t border-gray-200">
+                    <button onclick="loadMoreData()" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold py-2 px-6 rounded shadow-sm">
+                        <i class="fa-solid fa-arrow-down mr-2"></i> Load More Data
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT -->
     <script>
         let currentOrder = null;
+        let currentOffset = 0;
+        let globalTotalVoid = 0;
 
         async function callApi(action, payload = {}) {
             payload.action = action;
@@ -283,34 +275,67 @@
             } catch(e) { toggleLoader(false); showMsg("Update Failed.", "error"); }
         }
 
-        async function loadSheetData() {
+        // --- View Data Logic ---
+
+        // Initial Load (Reset)
+        async function initLoadData() {
+            currentOffset = 0; // Reset offset
+            globalTotalVoid = 0; // Reset void total
+            document.getElementById('table-body').innerHTML = '';
+            document.getElementById('data-container').classList.add('hidden');
+            document.getElementById('stats-card').classList.add('hidden');
+            document.getElementById('load-more-container').classList.add('hidden');
+
+            await fetchSheetData(false);
+        }
+
+        // Load More (Pagination)
+        async function loadMoreData() {
+            currentOffset += 50;
+            await fetchSheetData(true);
+        }
+
+        // Core Fetch Function
+        async function fetchSheetData(append) {
             const val = document.getElementById('view-sheet-select').value;
             if(!val) return showMsg("Select a sheet first", "error");
             const [destId, destName] = val.split('###');
             const dateInput = document.getElementById('date-filter').value;
 
             toggleLoader(true);
-            document.getElementById('data-container').classList.add('hidden');
-            document.getElementById('stats-card').classList.add('hidden');
-
+            
             try {
-                // Send date to server for fast filtering
-                const res = await callApi('getData', { spreadsheetId: destId, sheetName: destName, date: dateInput });
+                const res = await callApi('getData', { 
+                    spreadsheetId: destId, 
+                    sheetName: destName, 
+                    date: dateInput,
+                    offset: currentOffset 
+                });
+                
                 toggleLoader(false);
 
                 if(res.success) {
-                    renderTable(res.data);
+                    renderTable(res.data, append);
                     
-                    // Update Stats Label
+                    // Update Labels
                     const lbl = document.getElementById('stats-date-label');
                     if(res.filterApplied && dateInput) {
                         lbl.innerText = new Date(dateInput).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                     } else {
-                        lbl.innerText = "Last 50 Records (Most Recent)";
+                        lbl.innerText = "All Records (Newest First)";
                     }
 
                     document.getElementById('data-container').classList.remove('hidden');
                     document.getElementById('stats-card').classList.remove('hidden');
+
+                    // Show/Hide Load More Button
+                    const loadMoreBtn = document.getElementById('load-more-container');
+                    if (res.hasMore && !res.filterApplied) {
+                        loadMoreBtn.classList.remove('hidden');
+                    } else {
+                        loadMoreBtn.classList.add('hidden');
+                    }
+
                 } else { showMsg(res.message, "error"); }
             } catch(e) { toggleLoader(false); showMsg("Failed to load data.", "error"); }
         }
@@ -319,25 +344,35 @@
             document.getElementById('date-filter').value = '';
         }
 
-        function renderTable(data) {
+        function renderTable(data, append) {
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-            let totalVoid = 0;
+            
+            if (!append) {
+                // If not appending, clear existing
+                tbody.innerHTML = ''; 
+                globalTotalVoid = 0;
+            }
 
             if(!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-500">No Data Found</td></tr>';
-                document.getElementById('void-total-display').innerText = "0";
+                if(!append) {
+                   tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-500">No Data Found</td></tr>';
+                   document.getElementById('void-total-display').innerText = "0";
+                }
                 return;
             }
+
+            // Calculate starting index for row numbers
+            let startIndex = append ? tbody.children.length : 0;
 
             data.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 const voidVal = parseFloat(row[6]) || 0;
-                totalVoid += voidVal;
+                globalTotalVoid += voidVal;
 
                 const td1 = document.createElement('td');
                 td1.className = "px-6 py-4 whitespace-nowrap font-medium text-gray-500";
-                td1.innerHTML = `<span class="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">${index+1}</span>`;
+                // Continuous numbering
+                td1.innerHTML = `<span class="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">${startIndex + index + 1}</span>`;
                 tr.appendChild(td1);
 
                 [row[0], row[1], row[2], row[3], row[4]].forEach((txt, i) => {
@@ -362,7 +397,7 @@
 
                 tbody.appendChild(tr);
             });
-            document.getElementById('void-total-display').innerText = totalVoid.toLocaleString();
+            document.getElementById('void-total-display').innerText = globalTotalVoid.toLocaleString();
         }
 
         function copyAmount() { if(currentOrder) document.getElementById('void-amount').value = currentOrder.amount; }
