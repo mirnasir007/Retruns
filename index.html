@@ -11,7 +11,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        /* 100% Wide & 80% Zoom Scaling */
         html { width: 100%; height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
@@ -23,7 +22,6 @@
             overflow-x: hidden; 
         }
 
-        /* Custom Loader */
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3b82f6;
@@ -38,7 +36,6 @@
         .tab-inactive { color: #6b7280; }
         .tab-inactive:hover { color: #374151; background-color: #f9fafb; }
         
-        /* Table Styling */
         .table-container { max-height: 600px; overflow-y: auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; }
         thead th { position: sticky; top: 0; z-index: 10; background-color: #1f2937; color: white; }
         tbody tr:nth-child(even) { background-color: #f9fafb; }
@@ -48,7 +45,7 @@
 <body class="text-gray-800">
 
     <script>
-        // ⚠️ DEPLOY NEW WEB APP & PASTE URL HERE
+        // REPLACE WITH YOUR NEW APP DEPLOYMENT URL
         const API_URL = "https://script.google.com/macros/s/AKfycbxBJblD5jbzoQBK7jXNMsxZIxgPFwrP52ZGr5pursK_BWc_AVoxDFR7Qsd4SNe9sLqsJw/exec"; 
     </script>
 
@@ -114,7 +111,7 @@
                                 <label class="block text-sm font-semibold text-gray-700">Void Amount</label>
                                 <button onclick="copyAmount()" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">Copy Order Amount</button>
                             </div>
-                            <input type="number" id="void-amount" class="block w-full rounded-md border p-3" value="0">
+                            <input type="number" id="void-amount" class="block w-full rounded-md border p-3" value="" placeholder="Enter amount" oninput="checkStatusAuto()">
                         </div>
                         <button onclick="updateStatus()" id="btn-save" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 mt-4 rounded-md shadow-md text-lg">Update & Save</button>
                     </div>
@@ -183,6 +180,25 @@
         </div>
     </div>
 
+    <div id="custom-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative p-6 border w-96 shadow-xl rounded-lg bg-white transform transition-all">
+            <div class="mt-2 text-center">
+                <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-100 mb-4">
+                    <i class="fa-solid fa-triangle-exclamation text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900">Duplicate Warning</h3>
+                <div class="mt-3 py-2">
+                    <p class="text-sm text-gray-600 font-medium" id="modal-message">This Order ID is already saved in the Destination Sheet!</p>
+                </div>
+                <div class="mt-5">
+                    <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-bold text-white hover:bg-red-700 focus:outline-none transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentOrder = null;
         let currentOffset = 0;
@@ -245,9 +261,26 @@
                     document.getElementById('res-status').innerText = currentOrder.status || '-';
                     document.getElementById('result-card').classList.remove('hidden');
                     document.getElementById('status-select').value = 'Returned';
-                    document.getElementById('void-amount').value = 0;
+                    document.getElementById('void-amount').value = '';
                 } else { showMsg(res.message, "error"); }
             } catch(e) { toggleLoader(false); showMsg("Search Failed.", "error"); }
+        }
+
+        // NEW FEATURE: Auto-select Partial Delivery based on amount typed
+        function checkStatusAuto() {
+            if (!currentOrder) return;
+            const originalAmount = parseFloat(currentOrder.amount) || 0;
+            const voidAmountInput = document.getElementById('void-amount').value;
+            
+            if (voidAmountInput === '') return;
+            
+            const voidAmount = parseFloat(voidAmountInput) || 0;
+            
+            if (voidAmount > 0 && voidAmount < originalAmount) {
+                document.getElementById('status-select').value = 'Partial Delivery';
+            } else if (voidAmount === originalAmount && originalAmount > 0) {
+                document.getElementById('status-select').value = 'Returned';
+            }
         }
 
         async function updateStatus() {
@@ -271,16 +304,18 @@
                 if(res.success) {
                     showMsg(res.message, "success");
                     document.getElementById('res-status').innerText = payload.newStatus;
-                } else { showMsg(res.message, "error"); }
-            } catch(e) { toggleLoader(false); showMsg("Update Failed.", "error"); }
+                } else { 
+                    if (res.isDuplicate) {
+                        openModal("WARNING: This Order ID is already saved in the Destination Sheet!");
+                    }
+                    showMsg(res.message, "error"); 
+                }
+            } catch(e) { toggleLoader(false); showMsg("Already Save !", "error"); }
         }
 
-        // --- View Data Logic ---
-
-        // Initial Load (Reset)
         async function initLoadData() {
-            currentOffset = 0; // Reset offset
-            globalTotalVoid = 0; // Reset void total
+            currentOffset = 0;
+            globalTotalVoid = 0;
             document.getElementById('table-body').innerHTML = '';
             document.getElementById('data-container').classList.add('hidden');
             document.getElementById('stats-card').classList.add('hidden');
@@ -289,13 +324,11 @@
             await fetchSheetData(false);
         }
 
-        // Load More (Pagination)
         async function loadMoreData() {
             currentOffset += 50;
             await fetchSheetData(true);
         }
 
-        // Core Fetch Function
         async function fetchSheetData(append) {
             const val = document.getElementById('view-sheet-select').value;
             if(!val) return showMsg("Select a sheet first", "error");
@@ -317,7 +350,6 @@
                 if(res.success) {
                     renderTable(res.data, append);
                     
-                    // Update Labels
                     const lbl = document.getElementById('stats-date-label');
                     if(res.filterApplied && dateInput) {
                         lbl.innerText = new Date(dateInput).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -328,7 +360,6 @@
                     document.getElementById('data-container').classList.remove('hidden');
                     document.getElementById('stats-card').classList.remove('hidden');
 
-                    // Show/Hide Load More Button
                     const loadMoreBtn = document.getElementById('load-more-container');
                     if (res.hasMore && !res.filterApplied) {
                         loadMoreBtn.classList.remove('hidden');
@@ -340,18 +371,12 @@
             } catch(e) { toggleLoader(false); showMsg("Failed to load data.", "error"); }
         }
 
-        function resetFilters() {
-            document.getElementById('date-filter').value = '';
-        }
+        function resetFilters() { document.getElementById('date-filter').value = ''; }
 
         function renderTable(data, append) {
             const tbody = document.getElementById('table-body');
             
-            if (!append) {
-                // If not appending, clear existing
-                tbody.innerHTML = ''; 
-                globalTotalVoid = 0;
-            }
+            if (!append) { tbody.innerHTML = ''; globalTotalVoid = 0; }
 
             if(!data || data.length === 0) {
                 if(!append) {
@@ -361,7 +386,6 @@
                 return;
             }
 
-            // Calculate starting index for row numbers
             let startIndex = append ? tbody.children.length : 0;
 
             data.forEach((row, index) => {
@@ -371,7 +395,6 @@
 
                 const td1 = document.createElement('td');
                 td1.className = "px-6 py-4 whitespace-nowrap font-medium text-gray-500";
-                // Continuous numbering
                 td1.innerHTML = `<span class="bg-gray-200 text-gray-700 py-1 px-2 rounded text-xs">${startIndex + index + 1}</span>`;
                 tr.appendChild(td1);
 
@@ -386,6 +409,8 @@
                 let stClass = "text-gray-900";
                 if(status === 'Returned') stClass = "text-red-600 font-bold bg-red-50 px-2 py-1 rounded";
                 else if(status === 'Delivered') stClass = "text-green-600 font-bold bg-green-50 px-2 py-1 rounded";
+                else if(status === 'Partial Delivery') stClass = "text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded";
+                
                 const tdS = document.createElement('td'); tdS.className="px-6 py-4 whitespace-nowrap";
                 tdS.innerHTML = `<span class="${stClass}">${status}</span>`;
                 tr.appendChild(tdS);
@@ -400,7 +425,12 @@
             document.getElementById('void-total-display').innerText = globalTotalVoid.toLocaleString();
         }
 
-        function copyAmount() { if(currentOrder) document.getElementById('void-amount').value = currentOrder.amount; }
+        function copyAmount() { 
+            if(currentOrder) {
+                document.getElementById('void-amount').value = currentOrder.amount; 
+                checkStatusAuto(); // Ensure logic fires even when copied 
+            }
+        }
         function toggleLoader(s) { document.getElementById('global-loader').classList.toggle('hidden', !s); }
         function showMsg(m, t) {
             const el = document.getElementById('status-msg');
