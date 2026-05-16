@@ -101,7 +101,10 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Save To (Destination)</label>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="block text-sm font-semibold text-gray-700">Save To (Destination)</label>
+                                <button onclick="openAddSheetModal()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 rounded"><i class="fa-solid fa-plus mr-1"></i>Add Sheet</button>
+                            </div>
                             <select id="dest-sheet-select" class="block w-full rounded-md border p-3 bg-white"><option value="">Loading...</option></select>
                         </div>
                     </div>
@@ -122,7 +125,10 @@
         <div id="section-view" class="hidden space-y-6 w-full">
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Sheet</label>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="block text-sm font-medium text-gray-700">Select Sheet</label>
+                        <button onclick="openAddSheetModal()" class="text-xs bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 py-1 rounded"><i class="fa-solid fa-plus mr-1"></i>Add Sheet</button>
+                    </div>
                     <select id="view-sheet-select" class="block w-full rounded-md border p-3"><option value="">Select Sheet...</option></select>
                 </div>
                 <div class="md:col-span-1">
@@ -193,6 +199,27 @@
                 <div class="mt-5">
                     <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-bold text-white hover:bg-red-700 focus:outline-none transition-colors">
                         Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-sheet-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative p-6 border w-96 shadow-xl rounded-lg bg-white transform transition-all">
+            <div class="mt-2 text-center">
+                <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Create New Sheet</h3>
+                <div class="mt-3 text-left">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sheet Name</label>
+                    <input type="text" id="new-sheet-name" class="block w-full rounded-md border-gray-300 shadow-sm text-base p-3 border" placeholder="Enter Sheet Name...">
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="closeAddSheetModal()" class="flex-1 rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-base font-bold text-gray-700 hover:bg-gray-50 focus:outline-none transition-colors">
+                        Cancel
+                    </button>
+                    <button id="btn-save-sheet" onclick="saveNewSheet()" class="flex-1 inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-blue-600 text-base font-bold text-white hover:bg-blue-700 focus:outline-none transition-colors">
+                        <span id="save-sheet-text">Save</span>
+                        <i id="save-sheet-loader" class="fa-solid fa-circle-notch fa-spin hidden ml-2"></i>
                     </button>
                 </div>
             </div>
@@ -458,6 +485,47 @@
             const el = document.getElementById('status-msg');
             el.innerText = m; el.className = `hidden mb-6 p-4 rounded-md text-base font-medium text-center shadow-sm ${t==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`;
             el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),5000);
+        }
+
+        // Add Sheet Functions
+        function openAddSheetModal() {
+            document.getElementById('new-sheet-name').value = '';
+            document.getElementById('add-sheet-modal').classList.remove('hidden');
+        }
+
+        function closeAddSheetModal() {
+            document.getElementById('add-sheet-modal').classList.add('hidden');
+        }
+
+        async function saveNewSheet() {
+            const sheetName = document.getElementById('new-sheet-name').value.trim();
+            if (!sheetName) return showMsg("Please enter a sheet name", "error");
+
+            const btn = document.getElementById('btn-save-sheet');
+            const loader = document.getElementById('save-sheet-loader');
+            
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+
+            try {
+                const res = await callApi('addSheet', { sheetName: sheetName });
+                if (res.success) {
+                    showMsg(res.message, "success");
+                    closeAddSheetModal();
+                    await loadSheetNames(); // List update korbe auto
+                } else {
+                    showMsg(res.message, "error");
+                    // Error message "Already Token This name" auto cloes popup
+                    if (res.message === "Already Token This name") {
+                        closeAddSheetModal();
+                    }
+                }
+            } catch(e) {
+                showMsg("Failed to create sheet.", "error");
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
         }
     </script>
 </body>
