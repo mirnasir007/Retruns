@@ -76,7 +76,7 @@
             <div class="bg-white shadow-md rounded-lg p-8 border border-gray-100">
                 <label class="block text-base font-semibold text-gray-700 mb-3">Search Order ID</label>
                 <div class="flex gap-3">
-                    <input type="text" id="orderIdInput" class="flex-1 block w-full rounded-md border-gray-300 shadow-sm text-base p-3 border" placeholder="Enter ID...">
+                    <input type="text" id="orderIdInput" class="flex-1 block w-full rounded-md border-gray-300 shadow-sm text-base p-3 border" placeholder="Enter ID..." onkeypress="if(event.key === 'Enter') searchOrder()">
                     <button onclick="searchOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md font-bold shadow-sm">Search</button>
                 </div>
             </div>
@@ -216,7 +216,14 @@
             } catch (error) { throw error; }
         }
 
-        window.onload = function() { loadSheetNames(); };
+        window.onload = function() { 
+            loadSheetNames(); 
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            document.getElementById('date-filter').value = `${year}-${month}-${day}`;
+        };
 
         function switchTab(tab) {
             const updateSec = document.getElementById('section-update');
@@ -240,8 +247,17 @@
                 if(res.success) {
                     const opts = '<option value="">Select Sheet...</option>' + 
                         res.data.map(s => `<option value="${s.spreadsheetId}###${s.name}">${s.name}</option>`).join('');
-                    document.getElementById('dest-sheet-select').innerHTML = opts;
-                    document.getElementById('view-sheet-select').innerHTML = opts;
+                    
+                    const destSelect = document.getElementById('dest-sheet-select');
+                    const viewSelect = document.getElementById('view-sheet-select');
+                    
+                    destSelect.innerHTML = opts;
+                    viewSelect.innerHTML = opts;
+
+                    if (res.data.length > 0) {
+                        destSelect.selectedIndex = destSelect.options.length - 1;
+                        viewSelect.selectedIndex = viewSelect.options.length - 1;
+                    }
                 }
             } catch(e) { showMsg("Failed to load sheets.", "error"); }
         }
@@ -287,6 +303,12 @@
             if(!currentOrder) return;
             const destVal = document.getElementById('dest-sheet-select').value;
             if(!destVal) return showMsg("Select Destination Sheet", "error");
+            
+            const voidAmountVal = document.getElementById('void-amount').value;
+            if(voidAmountVal.trim() === "" || isNaN(voidAmountVal)) {
+                return showMsg("Void Amount must be a valid number and cannot be empty!", "error");
+            }
+
             const [destId, destName] = destVal.split('###');
             const payload = {
                 sheetName: currentOrder.sheet, rowNum: currentOrder.rowNum,
@@ -294,7 +316,7 @@
                 orderId: document.getElementById('orderIdInput').value,
                 spreadsheetId: currentOrder.spreadsheetId,
                 destinationSheetName: destName, destinationSpreadsheetId: destId,
-                voidAmount: document.getElementById('void-amount').value,
+                voidAmount: voidAmountVal,
                 customerName: currentOrder.name, phone: currentOrder.phone, amount: currentOrder.amount
             };
             toggleLoader(true);
