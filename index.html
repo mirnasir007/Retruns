@@ -74,8 +74,15 @@
 
         <div id="section-update" class="space-y-6 max-w-5xl mx-auto">
             <div class="bg-white shadow-md rounded-lg p-8 border border-gray-100">
-                <label class="block text-base font-semibold text-gray-700 mb-3">Search Order ID</label>
-                <div class="flex gap-3">
+                <div class="flex justify-between items-center mb-3">
+                <label class="block text-base font-semibold text-gray-700">Search Order ID</label>
+                <!-- New Bahok Checkbox -->
+                <label class="inline-flex items-center cursor-pointer bg-gray-50 px-3 py-1 rounded-md border border-gray-200 hover:bg-gray-100 transition">
+                    <input type="checkbox" id="bahokCheck" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-sm font-bold text-gray-800">Bahok</span>
+                </label>
+            </div>
+            <div class="flex gap-3">
                     <input type="text" id="orderIdInput" class="flex-1 block w-full rounded-md border-gray-300 shadow-sm text-base p-3 border" placeholder="Enter ID..." onkeypress="if(event.key === 'Enter') searchOrder()">
                     <button onclick="searchOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md font-bold shadow-sm">Search</button>
                 </div>
@@ -291,13 +298,15 @@
 
         async function searchOrder() {
             const id = document.getElementById('orderIdInput').value;
+            const isBahok = document.getElementById('bahokCheck').checked; // Bahok Check
             if(!id) return showMsg("Please enter an ID", "error");
             toggleLoader(true); document.getElementById('result-card').classList.add('hidden');
             try {
-                const res = await callApi('search', { id: id });
+                const res = await callApi('search', { id: id, isBahok: isBahok });
                 toggleLoader(false);
                 if(res.success) {
                     currentOrder = res.data;
+                    currentOrder.isBahok = isBahok; // Bahok flag save korlam
                     document.getElementById('res-name').innerText = currentOrder.name || '-';
                     document.getElementById('res-phone').innerText = currentOrder.phone || '-';
                     document.getElementById('res-amount').innerText = currentOrder.amount || '-';
@@ -344,7 +353,8 @@
                 spreadsheetId: currentOrder.spreadsheetId,
                 destinationSheetName: destName, destinationSpreadsheetId: destId,
                 voidAmount: voidAmountVal,
-                customerName: currentOrder.name, phone: currentOrder.phone, amount: currentOrder.amount
+                customerName: currentOrder.name, phone: currentOrder.phone, amount: currentOrder.amount,
+                isBahok: currentOrder.isBahok
             };
             toggleLoader(true);
             try {
