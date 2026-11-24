@@ -982,6 +982,7 @@
   <script src="./config.js"></script>
   <script>
     const API_BASE_URL = String(window.PFF_API_BASE_URL || '').replace(/\/+$/, '');
+    const COURIER_API_BASE_URL = 'https://all-deliveries-overview-backend-019x.onrender.com';
     let fullAccessToken = '';
 
     function apiFetch(url, options = {}) {
@@ -3339,7 +3340,7 @@
       courierTrackButton.textContent = 'Searching...';
       setCourierTrackingMessage('Searching across all merchants...');
       try {
-        const response = await apiFetch(`/api/track/${encodeURIComponent(idInput)}`);
+        const response = await fetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(idInput)}`);
         const data = await readJsonResponse(response, 'Courier tracking failed');
         if (data.status !== 'success') throw new Error(data.message || 'Parcel not found.');
         if (!Array.isArray(data.parcel_info)) throw new Error('Courier returned invalid tracking details.');
@@ -3435,7 +3436,7 @@
       courierHistoryButton.disabled = true;
       courierHistoryButton.textContent = 'Checking...';
       try {
-        const response = await apiFetch(`/api/customer-history/${encodeURIComponent(phone)}`);
+        const response = await fetch(`${COURIER_API_BASE_URL}/api/customer-history/${encodeURIComponent(phone)}`);
         const data = await readJsonResponse(response, 'Courier history could not be loaded');
         if (data.status !== 'success') throw new Error(data.message || 'Courier history could not be loaded.');
         courierHistoryCards.replaceChildren(
