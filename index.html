@@ -202,6 +202,9 @@
     .invoice-toolbar .page-title { margin: 0 auto 0 0; }
     .search-controls, .download-controls, .payment-search, .details-search { display: flex; align-items: center; gap: 8px; }
     .search-controls input { min-width: 240px; }
+    .courier-action-btn { white-space: nowrap; }
+    .courier-history-btn { border-color: #176b55; background: #176b55; color: #fff; }
+    .courier-history-btn:hover { border-color: #10533f; background: #10533f; color: #fff; }
     .download-controls { justify-content: flex-end; margin: 0 0 14px; color: var(--muted); font-size: 13px; font-weight: 500; }
     .download-controls label { display: flex; align-items: center; gap: 6px; }
     .payment-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -269,6 +272,54 @@
     .invoice-duplicates-message.error { color: var(--danger); }
     .invoice-duplicates-table-wrap { min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
     .invoice-duplicates-table-wrap[hidden] { display: none; }
+    .courier-popup-overlay {
+      position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(15, 23, 42, .55); backdrop-filter: blur(2px);
+    }
+    .courier-popup-overlay.open { display: flex; }
+    .courier-dialog {
+      display: flex; flex-direction: column; gap: 14px; width: min(1050px, 100%); max-height: 90vh; min-height: 0;
+      padding: 22px; border: 1px solid var(--border); border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg);
+    }
+    .courier-dialog.history-dialog { width: min(680px, 100%); }
+    .courier-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .courier-dialog-header h2 { margin: 0; font-size: 19px; }
+    .courier-dialog-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .courier-popup-close {
+      flex: none; width: 34px; height: 34px; border: 0; border-radius: 8px; background: #eef1f6; color: var(--text-2);
+      font-size: 20px; cursor: pointer;
+    }
+    .courier-popup-close:hover { background: var(--danger-soft); color: var(--danger); }
+    .courier-result-message { margin: 0; padding: 10px; color: var(--muted); text-align: center; }
+    .courier-result-message.error { color: var(--danger); }
+    .courier-result-table-wrap { min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .courier-result-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
+    .courier-result-table th, .courier-result-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); text-align: center; }
+    .courier-result-table th { position: sticky; top: 0; background: var(--surface-2); color: var(--text); }
+    .courier-result-table tr:last-child td { border-bottom: 0; }
+    .courier-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
+    .courier-badge.pathao { background: #28a745; }
+    .courier-badge.bahok { background: #f7941d; }
+    .courier-status-link { padding: 0; border: 0; background: transparent; color: var(--info); font-weight: 700; cursor: pointer; }
+    .courier-status-link:hover { text-decoration: underline; }
+    .courier-status-hint { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .courier-history-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .courier-history-card { min-height: 190px; padding: 20px; border: 1px solid #e6ece9; border-radius: 12px; background: #fbfdfc; }
+    .courier-history-card h3 { margin: 0 0 16px; color: #176b55; font-size: 16px; }
+    .courier-history-card.bahok h3 { color: #d87a16; }
+    .courier-new-customer { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 20px; background: #e8f5ee; color: #176b55; font-size: 14px; font-weight: 700; }
+    .courier-new-customer::before { content: ""; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #24a06b; }
+    .courier-history-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .courier-history-metric { padding: 12px; border: 1px solid #edf1ef; border-radius: 8px; background: #fff; }
+    .courier-history-metric span { display: block; color: #71807b; font-size: 12px; }
+    .courier-history-metric strong { display: block; margin-top: 4px; color: #22332e; font-size: 21px; }
+    .courier-history-rating { margin: 14px 0 0; color: #52645e; font-size: 14px; }
+    .courier-history-error { margin: 0; color: var(--danger); font-size: 14px; line-height: 1.5; }
+    .courier-history-loading { grid-column: 1 / -1; padding: 28px; color: var(--muted); text-align: center; }
+    .courier-info-dialog { width: min(420px, 100%); }
+    .courier-info-content { color: var(--text-2); line-height: 1.8; overflow-wrap: anywhere; }
+    .courier-info-call { display: inline-block; margin-top: 10px; padding: 8px 20px; border-radius: 4px; background: #28a745; color: #fff; text-decoration: none; font-weight: 700; }
+    .courier-info-call[hidden] { display: none; }
     #bahokEntryPopup { z-index: 1100; }
     .bahok-entry-dialog { display: flex; flex-direction: column; gap: 14px; width: min(1180px, calc(100vw - 32px)); max-height: min(90vh, 900px); padding: 22px; border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg); text-align: left; }
     .bahok-entry-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -516,6 +567,11 @@
       .details-overlay { padding: 0; }
       .details-panel { padding: 14px; border-radius: 0; }
       .details-title { font-size: 18px; }
+      .courier-popup-overlay { padding: 10px; }
+      .courier-dialog { padding: 16px; }
+      .courier-history-cards { grid-template-columns: 1fr; }
+      .search-controls { flex-wrap: wrap; }
+      .search-controls input { flex: 1 1 100%; }
     }
   </style>
 </head>
@@ -606,6 +662,8 @@
           <form class="search-controls" id="invoiceSearchForm">
             <input id="invoiceSearch" type="search" placeholder="Search" aria-label="Search invoices" />
             <button type="submit" class="search-btn" id="searchInvoicesBtn">Search</button>
+            <button type="button" class="refresh-btn courier-action-btn" id="courierTrackButton">Courier</button>
+            <button type="button" class="refresh-btn courier-action-btn courier-history-btn" id="courierHistoryButton">Check</button>
           </form>
           <button type="button" class="refresh-btn" id="checkInvoiceDuplicatesBtn">Duplicate Check</button>
           <button type="button" class="refresh-btn" id="refreshInvoicesBtn">Refresh</button>
@@ -852,6 +910,46 @@
       </div>
     </section>
   </div>
+  <div class="courier-popup-overlay" id="courierTrackingPopup" role="dialog" aria-modal="true" aria-labelledby="courierTrackingTitle">
+    <section class="courier-dialog">
+      <header class="courier-dialog-header">
+        <div>
+          <h2 id="courierTrackingTitle">Courier Details</h2>
+          <p class="courier-dialog-subtitle" id="courierTrackingSubtitle"></p>
+        </div>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierTrackingPopup" aria-label="Close courier details">×</button>
+      </header>
+      <p class="courier-result-message" id="courierTrackingMessage" role="status" hidden></p>
+      <div class="courier-result-table-wrap" id="courierTrackingTableWrap" hidden>
+        <table class="courier-result-table">
+          <thead><tr><th>Merchant</th><th>Consignment ID</th><th>Order ID</th><th>Recipient Info</th><th>Address</th><th>Amount</th><th>Order Status</th><th>Payment</th></tr></thead>
+          <tbody id="courierTrackingRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <div class="courier-popup-overlay" id="courierHistoryPopup" role="dialog" aria-modal="true" aria-labelledby="courierHistoryTitle">
+    <section class="courier-dialog history-dialog">
+      <header class="courier-dialog-header">
+        <div>
+          <h2 id="courierHistoryTitle">Customer Courier History</h2>
+          <p class="courier-dialog-subtitle">Delivery records for <strong id="courierHistoryPhone"></strong></p>
+        </div>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierHistoryPopup" aria-label="Close courier history">×</button>
+      </header>
+      <div class="courier-history-cards" id="courierHistoryCards" aria-live="polite"></div>
+    </section>
+  </div>
+  <div class="courier-popup-overlay" id="courierInfoPopup" role="dialog" aria-modal="true" aria-labelledby="courierInfoTitle">
+    <section class="courier-dialog courier-info-dialog">
+      <header class="courier-dialog-header">
+        <h2 id="courierInfoTitle"></h2>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierInfoPopup" aria-label="Close courier information">×</button>
+      </header>
+      <div class="courier-info-content" id="courierInfoContent"></div>
+      <a class="courier-info-call" id="courierInfoCall" hidden>Call Rider</a>
+    </section>
+  </div>
   <div class="popup-overlay" id="pathaoMerchantPopup" role="dialog" aria-modal="true" aria-labelledby="pathaoMerchantPopupTitle">
     <div class="popup-box">
       <div class="popup-title" id="pathaoMerchantPopupTitle">Choose Pathao Merchant</div>
@@ -983,6 +1081,20 @@
     const invoiceSearch = document.getElementById('invoiceSearch');
     const searchInvoicesBtn = document.getElementById('searchInvoicesBtn');
     const checkInvoiceDuplicatesBtn = document.getElementById('checkInvoiceDuplicatesBtn');
+    const courierTrackButton = document.getElementById('courierTrackButton');
+    const courierHistoryButton = document.getElementById('courierHistoryButton');
+    const courierTrackingPopup = document.getElementById('courierTrackingPopup');
+    const courierTrackingSubtitle = document.getElementById('courierTrackingSubtitle');
+    const courierTrackingMessage = document.getElementById('courierTrackingMessage');
+    const courierTrackingTableWrap = document.getElementById('courierTrackingTableWrap');
+    const courierTrackingRows = document.getElementById('courierTrackingRows');
+    const courierHistoryPopup = document.getElementById('courierHistoryPopup');
+    const courierHistoryPhone = document.getElementById('courierHistoryPhone');
+    const courierHistoryCards = document.getElementById('courierHistoryCards');
+    const courierInfoPopup = document.getElementById('courierInfoPopup');
+    const courierInfoTitle = document.getElementById('courierInfoTitle');
+    const courierInfoContent = document.getElementById('courierInfoContent');
+    const courierInfoCall = document.getElementById('courierInfoCall');
     const invoiceDuplicatesPopup = document.getElementById('invoiceDuplicatesPopup');
     const invoiceDuplicatesMessage = document.getElementById('invoiceDuplicatesMessage');
     const invoiceDuplicatesTableWrap = document.getElementById('invoiceDuplicatesTableWrap');
@@ -3087,6 +3199,268 @@
       }
     });
 
+    function openCourierPopup(popup) {
+      popup.classList.add('open');
+    }
+
+    function closeCourierPopups() {
+      if (courierInfoPopup.classList.contains('open')) {
+        courierInfoPopup.classList.remove('open');
+        return;
+      }
+      document.querySelectorAll('.courier-popup-overlay.open')
+        .forEach((popup) => popup.classList.remove('open'));
+    }
+
+    function setCourierTrackingMessage(message, isError = false) {
+      courierTrackingMessage.textContent = message;
+      courierTrackingMessage.className = `courier-result-message${isError ? ' error' : ''}`;
+      courierTrackingMessage.hidden = false;
+    }
+
+    function formatCourierDate(dateValue) {
+      if (!dateValue) return '';
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return String(dateValue);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
+    }
+
+    function showCourierInfo(title, lines, phone = '') {
+      courierInfoTitle.textContent = title;
+      courierInfoContent.replaceChildren();
+      lines.forEach((line) => {
+        const row = document.createElement('div');
+        row.textContent = line;
+        courierInfoContent.appendChild(row);
+      });
+      const safePhone = String(phone).replace(/[^\d+]/g, '');
+      courierInfoCall.hidden = !safePhone || safePhone === 'N/A';
+      if (!courierInfoCall.hidden) courierInfoCall.href = `tel:${safePhone}`;
+      openCourierPopup(courierInfoPopup);
+    }
+
+    function appendCourierCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = value == null || value === '' ? 'N/A' : String(value);
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function renderCourierTrackingRows(orders) {
+      const sortedOrders = [...orders].sort((a, b) => {
+        const priority = (order) => order.order_status === 'Rider Assigned' || order.order_status === 'Assigned For Delivery';
+        return Number(priority(b)) - Number(priority(a));
+      });
+      sortedOrders.forEach((info) => {
+        const row = document.createElement('tr');
+        const merchantCell = document.createElement('td');
+        const sendDate = formatCourierDate(info.send_date);
+        if (sendDate) {
+          const date = document.createElement('div');
+          date.textContent = sendDate;
+          date.style.cssText = 'font-size:11px;color:#555;margin-bottom:3px;font-weight:bold;white-space:nowrap';
+          merchantCell.appendChild(date);
+        }
+        const badge = document.createElement('span');
+        const merchant = String(info.source_merchant || 'N/A');
+        badge.className = `courier-badge${merchant === 'Bahok Courier' || merchant === 'Sumaiya Everyday' ? ' bahok' : ' pathao'}`;
+        badge.textContent = merchant;
+        merchantCell.appendChild(badge);
+        row.appendChild(merchantCell);
+
+        appendCourierCell(row, info.consignment_id);
+        appendCourierCell(row, info.merchant_order_id);
+        const recipientCell = document.createElement('td');
+        recipientCell.textContent = `${info.recipient_name || 'N/A'} | Phone: ${info.recipient_phone || 'N/A'}`;
+        row.appendChild(recipientCell);
+        appendCourierCell(row, info.delivery_address);
+        appendCourierCell(row, `৳${info.amount_to_collect || '0'}`);
+
+        const statusCell = document.createElement('td');
+        const orderStatus = String(info.order_status || 'N/A');
+        const statusLower = orderStatus.toLowerCase();
+        if (orderStatus === 'Assigned For Delivery' || orderStatus === 'Rider Assigned') {
+          const statusButton = document.createElement('button');
+          statusButton.type = 'button';
+          statusButton.className = 'courier-status-link';
+          statusButton.textContent = orderStatus;
+          const hint = document.createElement('span');
+          hint.className = 'courier-status-hint';
+          hint.textContent = '(Click for details)';
+          statusButton.appendChild(hint);
+          statusButton.addEventListener('click', () => showCourierInfo('Rider Details', [
+            `Name: ${info.rider_name || 'Not Found'}`,
+            `Phone: ${info.rider_phone || 'N/A'}`
+          ], info.rider_phone));
+          statusCell.appendChild(statusButton);
+        } else if (statusLower.includes('hold')) {
+          const statusButton = document.createElement('button');
+          statusButton.type = 'button';
+          statusButton.className = 'courier-status-link';
+          statusButton.style.color = 'var(--danger)';
+          statusButton.textContent = orderStatus;
+          const hint = document.createElement('span');
+          hint.className = 'courier-status-hint';
+          hint.style.color = 'var(--danger)';
+          hint.textContent = '(Click for reason)';
+          statusButton.appendChild(hint);
+          statusButton.addEventListener('click', () => showCourierInfo('Hold Reason', [
+            info.hold_reason || 'No exact reason provided by courier.'
+          ]));
+          statusCell.appendChild(statusButton);
+        } else {
+          const status = document.createElement('strong');
+          status.textContent = orderStatus;
+          statusCell.appendChild(status);
+        }
+        row.appendChild(statusCell);
+        const paymentCell = document.createElement('td');
+        const paymentStatus = document.createElement('strong');
+        paymentStatus.textContent = info.payment_status || 'N/A';
+        paymentCell.appendChild(paymentStatus);
+        row.appendChild(paymentCell);
+        courierTrackingRows.appendChild(row);
+      });
+    }
+
+    async function trackCourierParcel() {
+      const idInput = invoiceSearch.value.trim();
+      openCourierPopup(courierTrackingPopup);
+      courierTrackingSubtitle.textContent = idInput ? `Search: ${idInput}` : '';
+      courierTrackingRows.replaceChildren();
+      courierTrackingTableWrap.hidden = true;
+      if (!idInput) {
+        setCourierTrackingMessage('Please enter a valid Tracking ID or Mobile Number.', true);
+        return;
+      }
+
+      courierTrackButton.disabled = true;
+      courierTrackButton.textContent = 'Searching...';
+      setCourierTrackingMessage('Searching across all merchants...');
+      try {
+        const response = await apiFetch(`/api/track/${encodeURIComponent(idInput)}`);
+        const data = await readJsonResponse(response, 'Courier tracking failed');
+        if (data.status !== 'success') throw new Error(data.message || 'Parcel not found.');
+        if (!Array.isArray(data.parcel_info)) throw new Error('Courier returned invalid tracking details.');
+        if (!data.parcel_info.length) {
+          setCourierTrackingMessage('No parcel details found.', true);
+          return;
+        }
+        renderCourierTrackingRows(data.parcel_info);
+        courierTrackingMessage.hidden = true;
+        courierTrackingTableWrap.hidden = false;
+      } catch (error) {
+        setCourierTrackingMessage(error.message || 'Connection error. Please try again.', true);
+      } finally {
+        courierTrackButton.disabled = false;
+        courierTrackButton.textContent = 'Courier';
+      }
+    }
+
+    function createCourierHistoryError(title, message) {
+      const card = document.createElement('section');
+      card.className = 'courier-history-card';
+      const heading = document.createElement('h3');
+      heading.textContent = title;
+      const error = document.createElement('p');
+      error.className = 'courier-history-error';
+      error.textContent = message;
+      card.append(heading, error);
+      return card;
+    }
+
+    function createCourierHistoryCard(name, data, metricNames, isBahok = false) {
+      const card = document.createElement('section');
+      card.className = `courier-history-card${isBahok ? ' bahok' : ''}`;
+      const heading = document.createElement('h3');
+      heading.textContent = name;
+      card.appendChild(heading);
+      if (!data || data.status !== 'success') {
+        const error = document.createElement('p');
+        error.className = 'courier-history-error';
+        error.textContent = data && data.message ? data.message : 'History is unavailable.';
+        card.appendChild(error);
+        return card;
+      }
+      if (data.new_customer) {
+        const label = document.createElement('span');
+        label.className = 'courier-new-customer';
+        label.textContent = 'New Customer';
+        card.appendChild(label);
+        return card;
+      }
+
+      const metrics = document.createElement('div');
+      metrics.className = 'courier-history-metrics';
+      metricNames.forEach(([label, key, suffix]) => {
+        const metric = document.createElement('div');
+        metric.className = 'courier-history-metric';
+        const name = document.createElement('span');
+        name.textContent = label;
+        const value = document.createElement('strong');
+        value.textContent = `${Number(data[key]) || 0}${suffix || ''}`;
+        metric.append(name, value);
+        metrics.appendChild(metric);
+      });
+      card.appendChild(metrics);
+      if (!isBahok) {
+        const rating = String(data.rating || 'Not available').replace(/_/g, ' ')
+          .replace(/\b\w/g, (character) => character.toUpperCase());
+        const ratingText = document.createElement('p');
+        ratingText.className = 'courier-history-rating';
+        const label = document.createElement('strong');
+        label.textContent = 'Customer Rating: ';
+        ratingText.append(label, document.createTextNode(rating));
+        card.appendChild(ratingText);
+      }
+      return card;
+    }
+
+    async function checkCourierCustomerHistory() {
+      const phoneInput = invoiceSearch.value.trim();
+      const phone = phoneInput.replace(/^\+?88/, '');
+      openCourierPopup(courierHistoryPopup);
+      courierHistoryPhone.textContent = phone || '—';
+      courierHistoryCards.replaceChildren();
+      if (!/^01\d{9}$/.test(phone)) {
+        courierHistoryCards.appendChild(createCourierHistoryError(
+          'Check the mobile number',
+          'Enter a valid Bangladesh mobile number to check courier history.'
+        ));
+        return;
+      }
+
+      courierHistoryCards.innerHTML = '<div class="courier-history-loading">Loading courier history…</div>';
+      courierHistoryButton.disabled = true;
+      courierHistoryButton.textContent = 'Checking...';
+      try {
+        const response = await apiFetch(`/api/customer-history/${encodeURIComponent(phone)}`);
+        const data = await readJsonResponse(response, 'Courier history could not be loaded');
+        if (data.status !== 'success') throw new Error(data.message || 'Courier history could not be loaded.');
+        courierHistoryCards.replaceChildren(
+          createCourierHistoryCard('Pathao', data.pathao, [
+            ['Processed', 'processed'],
+            ['Delivered', 'delivered'],
+            ['Returned', 'returned']
+          ]),
+          createCourierHistoryCard('Bahok', data.bahok, [
+            ['Cancel', 'canceled'],
+            ['Delivered', 'delivered'],
+            ['Success Rate', 'success_rate', '%']
+          ], true)
+        );
+      } catch (error) {
+        courierHistoryCards.replaceChildren(createCourierHistoryError(
+          'History unavailable',
+          error.message || 'Connection error. Please try again.'
+        ));
+      } finally {
+        courierHistoryButton.disabled = false;
+        courierHistoryButton.textContent = 'Check';
+      }
+    }
+
     async function checkInvoiceDuplicates() {
       invoiceDuplicatesPopup.style.display = 'flex';
       invoiceDuplicatesMessage.className = 'invoice-duplicates-message';
@@ -3210,6 +3584,21 @@
     }, { passive: true });
     refreshInvoicesBtn.addEventListener('click', () => loadInvoices(true));
     checkInvoiceDuplicatesBtn.addEventListener('click', checkInvoiceDuplicates);
+    courierTrackButton.addEventListener('click', trackCourierParcel);
+    courierHistoryButton.addEventListener('click', checkCourierCustomerHistory);
+    document.querySelectorAll('[data-close-courier-popup]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.getElementById(button.dataset.closeCourierPopup).classList.remove('open');
+      });
+    });
+    [courierTrackingPopup, courierHistoryPopup, courierInfoPopup].forEach((popup) => {
+      popup.addEventListener('click', (event) => {
+        if (event.target === popup) popup.classList.remove('open');
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeCourierPopups();
+    });
     ['closeInvoiceDuplicates', 'closeInvoiceDuplicatesButton'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
         invoiceDuplicatesPopup.style.display = 'none';
