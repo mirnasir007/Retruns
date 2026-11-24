@@ -273,8 +273,16 @@
     .change-status-current { margin-bottom: 16px; color: var(--text-2); }
     .change-status-current strong { margin-left: 6px; color: var(--text); }
     .change-status-update { display: flex; align-items: flex-end; gap: 10px; }
+    .change-status-update label { min-width: 220px; }
+    .change-status-update .submit-btn { width: auto; min-width: 100px; flex: 0 0 auto; margin: 0; }
     .change-status-message { max-width: 720px; margin: 0 0 14px; padding: 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); }
     .change-status-message.error { background: var(--danger-soft); color: var(--danger); }
+    .duplicate-delete-box { max-width: 440px; }
+    .duplicate-delete-message { margin: 0 0 14px; color: var(--danger); font-size: 13px; }
+    .duplicate-delete-actions { display: flex; justify-content: center; gap: 10px; }
+    .duplicate-delete-actions .refresh-btn, .duplicate-delete-actions .submit-btn { width: auto; min-width: 105px; margin: 0; }
+    .duplicate-delete-confirm-btn { background: var(--danger); }
+    .duplicate-delete-confirm-btn:hover { background: #991b1b; }
     .invoice-duplicates-dialog { display: flex; flex-direction: column; gap: 14px; width: min(680px, calc(100vw - 32px)); max-height: min(80vh, 760px); padding: 22px; border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg); text-align: left; }
     .invoice-duplicates-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .invoice-duplicates-header h2 { margin: 0; font-size: 19px; }
@@ -848,7 +856,6 @@
                   <option value="" selected disabled>Select status</option>
                   <option value="Paid">Paid</option>
                   <option value="Partial Delivery">Partial Delivery</option>
-                  <option value="Partial Delivered">Partial Delivered</option>
                   <option value="Returned">Returned</option>
                   <option value="Return Received">Return Received</option>
                   <option value="Exchanges">Exchanges</option>
@@ -966,6 +973,17 @@
       </div>
       <div class="details-actions">
         <button type="button" class="popup-close-btn" id="closeInvoiceDuplicatesButton">Close</button>
+      </div>
+    </section>
+  </div>
+  <div class="popup-overlay" id="duplicateDeleteConfirmPopup" role="dialog" aria-modal="true" aria-labelledby="duplicateDeleteTitle">
+    <section class="popup-box duplicate-delete-box">
+      <h2 class="popup-title" id="duplicateDeleteTitle">Delete entire sheet row?</h2>
+      <p class="popup-sub" id="duplicateDeletePrompt"></p>
+      <p class="duplicate-delete-message" id="duplicateDeleteMessage" role="status" hidden></p>
+      <div class="duplicate-delete-actions">
+        <button type="button" class="refresh-btn" id="cancelDuplicateDelete">Cancel</button>
+        <button type="button" class="submit-btn duplicate-delete-confirm-btn" id="confirmDuplicateDelete">Delete row</button>
       </div>
     </section>
   </div>
@@ -1169,6 +1187,11 @@
     const invoiceDuplicatesMessage = document.getElementById('invoiceDuplicatesMessage');
     const invoiceDuplicatesTableWrap = document.getElementById('invoiceDuplicatesTableWrap');
     const invoiceDuplicatesRows = document.getElementById('invoiceDuplicatesRows');
+    const duplicateDeleteConfirmPopup = document.getElementById('duplicateDeleteConfirmPopup');
+    const duplicateDeletePrompt = document.getElementById('duplicateDeletePrompt');
+    const duplicateDeleteMessage = document.getElementById('duplicateDeleteMessage');
+    const cancelDuplicateDelete = document.getElementById('cancelDuplicateDelete');
+    const confirmDuplicateDelete = document.getElementById('confirmDuplicateDelete');
     const invoiceDownloadForm = document.getElementById('invoiceDownloadForm');
     const clearInvoiceDateFilterBtn = document.getElementById('clearInvoiceDateFilterBtn');
     const bahokEntryOpenButton = document.getElementById('bahokEntryOpenButton');
@@ -1189,7 +1212,7 @@
       { title: 'Payment Date', index: 11 },
       { title: 'Payment Id', index: 12 }
     ];
-    const statuses = ['Paid', 'Partial Delivery', 'Partial Delivered', 'Returned', 'Return Receved', 'Exchanges'];
+    const statuses = ['Paid', 'Partial Delivery', 'Returned', 'Return Received', 'Exchanges', 'Lost'];
     const spreadsheetHeaders = [
       'Date', 'Delivery Status', 'Merchant Order Id', 'RecipientName(*)',
       'Recipient Phone(*)', 'Recipient Address(*)', 'Amount', 'Quantity',
@@ -1204,6 +1227,7 @@
 
     let currentFile = null;
     let resetUploaderOnPopupClose = false;
+    let pendingDuplicateDelete = null;
     let currentSearch = '';
     let nextBeforeRow = null;
     let nextSearchOffset = 0;
@@ -2146,6 +2170,9 @@
         const statusCell = document.createElement('td');
         if (match.importStatus === 'Found in All Invoice') {
           match.deliveryStatus = displayReturnStatus(match.deliveryStatus);
+          const currentStatus = match.deliveryStatus.toLowerCase();
+          if (currentStatus === 'partial delivered') match.deliveryStatus = 'Partial Delivery';
+          if (currentStatus === 'return receved') match.deliveryStatus = 'Return Received';
           const statusSelect = document.createElement('select');
           statusSelect.className = 'verification-status';
           statusSelect.setAttribute('aria-label', `Delivery status for ${match.merchantOrderId}`);
@@ -3688,15 +3715,36 @@
       }
     }
 
-    async function deleteDuplicateInvoiceRow(duplicate, button) {
+    function requestDuplicateInvoiceDelete(duplicate, button) {
       if (!Number.isInteger(Number(duplicate.rowNumber)) || Number(duplicate.rowNumber) < 2) {
         invoiceDuplicatesMessage.className = 'invoice-duplicates-message error';
         invoiceDuplicatesMessage.textContent = 'This duplicate is missing its sheet row number. Run Duplicate Check again.';
         return;
       }
-      if (!window.confirm(`Delete the entire sheet row for order ${duplicate.orderId}? This cannot be undone.`)) return;
+      pendingDuplicateDelete = { duplicate, button };
+      duplicateDeletePrompt.textContent = `Delete the entire sheet row for order ${duplicate.orderId}? This cannot be undone.`;
+      duplicateDeleteMessage.hidden = true;
+      duplicateDeleteMessage.textContent = '';
+      confirmDuplicateDelete.disabled = false;
+      cancelDuplicateDelete.disabled = false;
+      duplicateDeleteConfirmPopup.style.display = 'flex';
+    }
 
+    function closeDuplicateDeleteConfirm() {
+      if (confirmDuplicateDelete.disabled) return;
+      duplicateDeleteConfirmPopup.style.display = 'none';
+      pendingDuplicateDelete = null;
+    }
+
+    async function deleteDuplicateInvoiceRow() {
+      if (!pendingDuplicateDelete) return;
+      const { duplicate, button } = pendingDuplicateDelete;
       button.disabled = true;
+      confirmDuplicateDelete.disabled = true;
+      cancelDuplicateDelete.disabled = true;
+      duplicateDeleteMessage.hidden = false;
+      duplicateDeleteMessage.style.color = 'var(--muted)';
+      duplicateDeleteMessage.textContent = 'Deleting the sheet row...';
       try {
         const response = await apiFetch(`/api/invoices/${encodeURIComponent(duplicate.rowNumber)}`, {
           method: 'DELETE',
@@ -3711,12 +3759,16 @@
         });
         const result = await readJsonResponse(response, 'Failed to delete the invoice row');
         if (result.success !== true) throw new Error('Server did not confirm the sheet row deletion.');
+        duplicateDeleteConfirmPopup.style.display = 'none';
+        pendingDuplicateDelete = null;
         invoiceDuplicatesMessage.className = 'invoice-duplicates-message';
         invoiceDuplicatesMessage.textContent = `Deleted the full sheet row for order ${result.orderId}. Refreshing duplicate results...`;
         await checkInvoiceDuplicates();
       } catch (error) {
-        invoiceDuplicatesMessage.className = 'invoice-duplicates-message error';
-        invoiceDuplicatesMessage.textContent = error.message || 'Failed to delete the invoice row.';
+        duplicateDeleteMessage.style.color = 'var(--danger)';
+        duplicateDeleteMessage.textContent = error.message || 'Failed to delete the invoice row.';
+        confirmDuplicateDelete.disabled = false;
+        cancelDuplicateDelete.disabled = false;
       } finally {
         button.disabled = false;
       }
@@ -3752,7 +3804,7 @@
           phoneCell.textContent = duplicate.phone || '-';
           const actionCell = document.createElement('td');
           const deleteButton = createIconButton('Delete full sheet row', 'clear', 'duplicate-delete-btn');
-          deleteButton.addEventListener('click', () => deleteDuplicateInvoiceRow(duplicate, deleteButton));
+          deleteButton.addEventListener('click', () => requestDuplicateInvoiceDelete(duplicate, deleteButton));
           actionCell.appendChild(deleteButton);
           row.append(dateCell, orderCell, nameCell, phoneCell, actionCell);
           invoiceDuplicatesRows.appendChild(row);
@@ -3871,6 +3923,16 @@
     });
     invoiceDuplicatesPopup.addEventListener('click', (event) => {
       if (event.target === invoiceDuplicatesPopup) invoiceDuplicatesPopup.style.display = 'none';
+    });
+    cancelDuplicateDelete.addEventListener('click', closeDuplicateDeleteConfirm);
+    confirmDuplicateDelete.addEventListener('click', deleteDuplicateInvoiceRow);
+    duplicateDeleteConfirmPopup.addEventListener('click', (event) => {
+      if (event.target === duplicateDeleteConfirmPopup) closeDuplicateDeleteConfirm();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && duplicateDeleteConfirmPopup.style.display === 'flex') {
+        closeDuplicateDeleteConfirm();
+      }
     });
     invoiceSearchForm.addEventListener('submit', (event) => {
       event.preventDefault();
