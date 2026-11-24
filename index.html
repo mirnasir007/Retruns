@@ -262,6 +262,19 @@
     .payment-summary-metric strong { color: var(--text); font-size: 19px; font-weight: 750; }
     .payment-summary-metric.pending { border-color: #fed7aa; background: #fff7ed; }
     .payment-summary-metric.pending strong { color: #c2410c; }
+    .change-status-search { display: flex; align-items: flex-end; gap: 10px; max-width: 720px; margin-bottom: 16px; }
+    .change-status-search label, .change-status-update label { display: grid; flex: 1; gap: 6px; color: var(--text-2); font-size: 13px; font-weight: 650; }
+    .change-status-search input, .change-status-update select {
+      width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--border-strong);
+      border-radius: 8px; background: #fff; color: var(--text); font: inherit;
+    }
+    .change-status-card { max-width: 720px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); }
+    .change-status-card[hidden] { display: none; }
+    .change-status-current { margin-bottom: 16px; color: var(--text-2); }
+    .change-status-current strong { margin-left: 6px; color: var(--text); }
+    .change-status-update { display: flex; align-items: flex-end; gap: 10px; }
+    .change-status-message { max-width: 720px; margin: 0 0 14px; padding: 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); }
+    .change-status-message.error { background: var(--danger-soft); color: var(--danger); }
     .invoice-duplicates-dialog { display: flex; flex-direction: column; gap: 14px; width: min(680px, calc(100vw - 32px)); max-height: min(80vh, 760px); padding: 22px; border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg); text-align: left; }
     .invoice-duplicates-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .invoice-duplicates-header h2 { margin: 0; font-size: 19px; }
@@ -378,6 +391,7 @@
     .tone-danger  { background: var(--danger-soft) !important; color: var(--danger) !important; border-color: #fecaca !important; }
     .tone-info    { background: var(--info-soft) !important; color: var(--info) !important; border-color: #bae6fd !important; }
     .tone-neutral { background: #eef1f6 !important; color: var(--text-2) !important; border-color: var(--border) !important; }
+    .return-status-plain { color: var(--danger) !important; font-weight: 700; }
     .pill {
       display: inline-block;
       padding: 3px 10px;
@@ -417,6 +431,8 @@
     .save-icon:hover { background: #166534; }
     .clear-icon { color: var(--danger); }
     .clear-icon:hover { background: var(--danger-soft); }
+    .duplicate-delete-btn { color: var(--danger); }
+    .duplicate-delete-btn:hover { background: var(--danger-soft); }
     .payment-actions { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
     .payment-actions .cell-action:disabled { opacity: .45; cursor: not-allowed; }
     .payment-actions .cell-action.payment-checked { color: var(--success); opacity: 1; background: var(--success-soft); }
@@ -566,6 +582,8 @@
       .payment-charge-grid { grid-template-columns: 1fr; }
       .payment-charge-controls { align-items: stretch; flex-direction: column; }
       .payment-charge-controls input { width: 100%; }
+      .change-status-search, .change-status-update { align-items: stretch; flex-direction: column; }
+      .change-status-search .search-btn, .change-status-update .submit-btn { width: 100%; }
       .details-overlay { padding: 0; }
       .details-panel { padding: 14px; border-radius: 0; }
       .details-title { font-size: 18px; }
@@ -723,7 +741,6 @@
                 <select id="returnNewStatus">
                   <option value="Return Receved">Return Receved</option>
                   <option value="Partial Delivery">Partial Delivery</option>
-                  <option value="Delivered">Delivered</option>
                   <option value="Exchange">Exchange</option>
                 </select>
               </div>
@@ -786,6 +803,7 @@
             <button type="button" class="payment-tab" data-payment-provider="pathao" role="tab" aria-selected="false">Pathao</button>
             <button type="button" class="payment-tab" data-payment-provider="bahok" role="tab" aria-selected="false">Bahok</button>
             <button type="button" class="payment-tab" data-payment-provider="delivery-charge" role="tab" aria-selected="false">Delivery Charge</button>
+            <button type="button" class="payment-tab" data-payment-provider="change-status" role="tab" aria-selected="false">Changes Status</button>
           </div>
         </div>
         <section id="paymentSummaryView" hidden>
@@ -813,6 +831,33 @@
             <article class="payment-charge-card"><span>Bahok Delivery Charge</span><strong id="bahokDeliveryCharge">—</strong></article>
           </div>
           <div class="invoice-message payment-charge-message" id="paymentChargeMessage" role="status" hidden></div>
+        </section>
+        <section id="paymentChangeStatusView" hidden>
+          <form class="change-status-search" id="changeStatusSearchForm">
+            <label for="changeStatusOrderId">Merchant Order Id
+              <input id="changeStatusOrderId" type="search" required placeholder="Enter Merchant Order Id" />
+            </label>
+            <button type="submit" class="search-btn" id="changeStatusSearchButton">Search</button>
+          </form>
+          <p class="change-status-message" id="changeStatusMessage" role="status" hidden></p>
+          <section class="change-status-card" id="changeStatusResult" hidden>
+            <div class="change-status-current">Current Delivery Status:<strong id="changeStatusCurrent"></strong></div>
+            <form class="change-status-update" id="changeStatusUpdateForm">
+              <label for="changeStatusSelect">Change Status
+                <select id="changeStatusSelect" required>
+                  <option value="" selected disabled>Select status</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Partial Delivery">Partial Delivery</option>
+                  <option value="Partial Delivered">Partial Delivered</option>
+                  <option value="Returned">Returned</option>
+                  <option value="Return Received">Return Received</option>
+                  <option value="Exchanges">Exchanges</option>
+                  <option value="Lost">Lost</option>
+                </select>
+              </label>
+              <button type="submit" class="submit-btn" id="changeStatusUpdateButton">Update</button>
+            </form>
+          </section>
         </section>
         <div class="payment-toolbar" id="paymentToolbar">
           <h2 class="payment-panel-title" id="paymentMerchantTitle" hidden></h2>
@@ -915,7 +960,7 @@
       <p class="invoice-duplicates-message" id="invoiceDuplicatesMessage" role="status">Checking recent invoices...</p>
       <div class="invoice-duplicates-table-wrap" id="invoiceDuplicatesTableWrap" hidden>
         <table class="invoice-table">
-          <thead><tr><th>Date</th><th>Merchant Order Id</th><th>Customer Name</th><th>Customer Number</th></tr></thead>
+          <thead><tr><th>Date</th><th>Merchant Order Id</th><th>Customer Name</th><th>Customer Number</th><th>Action</th></tr></thead>
           <tbody id="invoiceDuplicatesRows"></tbody>
         </table>
       </div>
@@ -1032,6 +1077,16 @@
     const paymentSummaryView = document.getElementById('paymentSummaryView');
     const paymentSummaryMessage = document.getElementById('paymentSummaryMessage');
     const paymentDeliveryChargeView = document.getElementById('paymentDeliveryChargeView');
+    const paymentChangeStatusView = document.getElementById('paymentChangeStatusView');
+    const changeStatusSearchForm = document.getElementById('changeStatusSearchForm');
+    const changeStatusOrderId = document.getElementById('changeStatusOrderId');
+    const changeStatusSearchButton = document.getElementById('changeStatusSearchButton');
+    const changeStatusMessage = document.getElementById('changeStatusMessage');
+    const changeStatusResult = document.getElementById('changeStatusResult');
+    const changeStatusCurrent = document.getElementById('changeStatusCurrent');
+    const changeStatusUpdateForm = document.getElementById('changeStatusUpdateForm');
+    const changeStatusSelect = document.getElementById('changeStatusSelect');
+    const changeStatusUpdateButton = document.getElementById('changeStatusUpdateButton');
     const paymentChargeMonth = document.getElementById('paymentChargeMonth');
     const bahokEntryPopup = document.getElementById('bahokEntryPopup');
     const bahokEntryDate = document.getElementById('bahokEntryDate');
@@ -1169,6 +1224,7 @@
     let pathaoTotalPages = 1;
     let pathaoRequestId = 0;
     let activePaymentProvider = '';
+    let changeStatusInvoice = null;
     let bahokCurrentPage = 1;
     let bahokTotalPages = 1;
     let returnSheetLoaded = false;
@@ -1307,6 +1363,14 @@
         selectPaymentProvider(link.dataset.paymentProvider);
       });
     });
+    changeStatusSearchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      searchInvoiceForStatus();
+    });
+    changeStatusUpdateForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      updateInvoiceStatus();
+    });
     paymentChargeMonth.addEventListener('change', loadPaymentDeliveryCharge);
     document.getElementById('dashboardCourierFilter').addEventListener('change', loadDashboard);
     document.getElementById('refreshDashboardBtn').addEventListener('click', loadDashboard);
@@ -1316,7 +1380,7 @@
     });
 
     function selectPaymentProvider(provider) {
-      if (!['summary', 'pathao', 'bahok', 'delivery-charge'].includes(provider)) return;
+      if (!['summary', 'pathao', 'bahok', 'delivery-charge', 'change-status'].includes(provider)) return;
       pathaoRequestId++;
       paymentSummaryRequestId++;
       paymentChargeRequestId++;
@@ -1339,8 +1403,9 @@
       paymentMessage.hidden = true;
       paymentSummaryView.hidden = provider !== 'summary';
       paymentDeliveryChargeView.hidden = provider !== 'delivery-charge';
+      paymentChangeStatusView.hidden = provider !== 'change-status';
       paymentChargeMessage.hidden = true;
-      paymentToolbar.hidden = provider === 'summary' || provider === 'delivery-charge';
+      paymentToolbar.hidden = provider === 'summary' || provider === 'delivery-charge' || provider === 'change-status';
 
       if (provider === 'summary') {
         loadPaymentSummary();
@@ -1348,6 +1413,14 @@
       }
       if (provider === 'delivery-charge') {
         loadPaymentDeliveryCharge();
+        return;
+      }
+      if (provider === 'change-status') {
+        activePaymentProvider = provider;
+        changeStatusSearchForm.reset();
+        changeStatusResult.hidden = true;
+        changeStatusMessage.hidden = true;
+        changeStatusInvoice = null;
         return;
       }
       if (provider === 'pathao') {
@@ -1370,6 +1443,76 @@
         'Received Amount', 'Payment Method', 'Date', 'Status', 'Action'
       ]);
       loadBahokPayments();
+    }
+
+    function showChangeStatusMessage(message, isError = false) {
+      changeStatusMessage.textContent = message;
+      changeStatusMessage.classList.toggle('error', isError);
+      changeStatusMessage.hidden = false;
+    }
+
+    async function searchInvoiceForStatus() {
+      const orderId = changeStatusOrderId.value.trim();
+      if (!orderId) return;
+      changeStatusInvoice = null;
+      changeStatusResult.hidden = true;
+      changeStatusMessage.hidden = true;
+      changeStatusSearchButton.disabled = true;
+      try {
+        const params = new URLSearchParams({ limit: '50', search: orderId });
+        const response = await apiFetch(`/api/invoices?${params}`);
+        const result = await readJsonResponse(response, 'Failed to search the invoice sheet');
+        if (!Array.isArray(result.invoices)) throw new Error('Invoice search returned invalid results.');
+        const normalizedOrderId = orderId.toLowerCase();
+        changeStatusInvoice = result.invoices.find((invoice) => (
+          Array.isArray(invoice.values)
+          && String(invoice.values[1] || '').trim().toLowerCase() === normalizedOrderId
+        )) || null;
+        if (!changeStatusInvoice) {
+          showChangeStatusMessage(`Merchant Order Id "${orderId}" was not found in All Invoice.`, true);
+          return;
+        }
+        changeStatusCurrent.textContent = String(changeStatusInvoice.values[0] || '—');
+        changeStatusSelect.value = '';
+        changeStatusResult.hidden = false;
+      } catch (error) {
+        showChangeStatusMessage(error.message || 'Failed to search the invoice sheet.', true);
+      } finally {
+        changeStatusSearchButton.disabled = false;
+      }
+    }
+
+    async function updateInvoiceStatus() {
+      if (!changeStatusInvoice) {
+        showChangeStatusMessage('Search for a Merchant Order Id first.', true);
+        return;
+      }
+      const status = changeStatusSelect.value;
+      if (!status) {
+        showChangeStatusMessage('Choose a delivery status.', true);
+        return;
+      }
+      changeStatusUpdateButton.disabled = true;
+      changeStatusMessage.hidden = true;
+      try {
+        const response = await apiFetch(`/api/invoices/${changeStatusInvoice.rowNumber}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, orderId: changeStatusInvoice.values[1] }),
+        });
+        const result = await readJsonResponse(response, 'Failed to update delivery status');
+        if (result.success !== true || result.status !== status) {
+          throw new Error('Server did not confirm the delivery status update.');
+        }
+        changeStatusInvoice.values[0] = result.status;
+        changeStatusCurrent.textContent = result.status;
+        changeStatusSelect.value = '';
+        showChangeStatusMessage(`Delivery status updated to ${result.status}.`);
+      } catch (error) {
+        showChangeStatusMessage(error.message || 'Failed to update delivery status.', true);
+      } finally {
+        changeStatusUpdateButton.disabled = false;
+      }
     }
 
     paymentSearchForm.addEventListener('submit', (event) => {
@@ -1764,7 +1907,8 @@
       const value = String(status || '').trim().toLowerCase();
       if (value === 'paid' || value === 'delivered') return 'success';
       if (value === 'unpaid' || value.startsWith('partial')) return 'warning';
-      if (value === 'returned' || value === 'return receved' || value.startsWith('# return') || value === 'cancel') return 'danger';
+      if (value === 'returned' || value === 'return receved' || value === 'return received' ||
+          value === 'lost' || value.startsWith('# return') || value === 'cancel') return 'danger';
       if (value === 'exchanges') return 'info';
       return 'neutral';
     }
@@ -2579,6 +2723,10 @@
           }),
         });
         const result = await readJsonResponse(response, 'Failed to save return');
+        if (/already saved/i.test(String(result.message || ''))) {
+          openPopup('Already Saved !');
+          return;
+        }
         showReturnMessage(result.message || 'Return saved.');
         returnOrder = null;
         returnOrderResult.hidden = true;
@@ -2588,7 +2736,8 @@
         document.getElementById('copyReturnAmount').disabled = true;
         document.getElementById('returnOrderId').focus();
       } catch (error) {
-        showReturnMessage(error.message, true);
+        if (/already saved/i.test(String(error.message || ''))) openPopup('Already Saved !');
+        else showReturnMessage(error.message, true);
       } finally {
         button.disabled = false;
       }
@@ -2649,10 +2798,11 @@
           const cell = document.createElement('td');
           cell.textContent = value === undefined || value === null || value === '' ? '-' : String(value);
           if (valueIndex === 6) {
-            const status = String(value || '');
-            if (status === 'Returned' || status === 'Return Receved' || status === '# Return Receved') cell.classList.add('tone-danger');
-            else if (status === 'Delivered') cell.classList.add('tone-success');
-            else if (status === 'Partial Delivery') cell.classList.add('tone-info');
+            const status = String(value || '').trim().replace(/^#\s*/, '').toLowerCase();
+            if (status === 'return receved' || status === 'return received') cell.classList.add('return-status-plain');
+            else if (status === 'returned') cell.classList.add('tone-danger');
+            else if (status === 'delivered') cell.classList.add('tone-success');
+            else if (status === 'partial delivery') cell.classList.add('tone-info');
           }
           tableRow.appendChild(cell);
         });
@@ -3538,6 +3688,40 @@
       }
     }
 
+    async function deleteDuplicateInvoiceRow(duplicate, button) {
+      if (!Number.isInteger(Number(duplicate.rowNumber)) || Number(duplicate.rowNumber) < 2) {
+        invoiceDuplicatesMessage.className = 'invoice-duplicates-message error';
+        invoiceDuplicatesMessage.textContent = 'This duplicate is missing its sheet row number. Run Duplicate Check again.';
+        return;
+      }
+      if (!window.confirm(`Delete the entire sheet row for order ${duplicate.orderId}? This cannot be undone.`)) return;
+
+      button.disabled = true;
+      try {
+        const response = await apiFetch(`/api/invoices/${encodeURIComponent(duplicate.rowNumber)}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: duplicate.date,
+            orderId: duplicate.orderId,
+            phone: duplicate.phone,
+            amount: duplicate.amount,
+            product: duplicate.product,
+          }),
+        });
+        const result = await readJsonResponse(response, 'Failed to delete the invoice row');
+        if (result.success !== true) throw new Error('Server did not confirm the sheet row deletion.');
+        invoiceDuplicatesMessage.className = 'invoice-duplicates-message';
+        invoiceDuplicatesMessage.textContent = `Deleted the full sheet row for order ${result.orderId}. Refreshing duplicate results...`;
+        await checkInvoiceDuplicates();
+      } catch (error) {
+        invoiceDuplicatesMessage.className = 'invoice-duplicates-message error';
+        invoiceDuplicatesMessage.textContent = error.message || 'Failed to delete the invoice row.';
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     async function checkInvoiceDuplicates() {
       invoiceDuplicatesPopup.style.display = 'flex';
       invoiceDuplicatesMessage.className = 'invoice-duplicates-message';
@@ -3566,7 +3750,11 @@
           nameCell.textContent = duplicate.name || '-';
           const phoneCell = document.createElement('td');
           phoneCell.textContent = duplicate.phone || '-';
-          row.append(dateCell, orderCell, nameCell, phoneCell);
+          const actionCell = document.createElement('td');
+          const deleteButton = createIconButton('Delete full sheet row', 'clear', 'duplicate-delete-btn');
+          deleteButton.addEventListener('click', () => deleteDuplicateInvoiceRow(duplicate, deleteButton));
+          actionCell.appendChild(deleteButton);
+          row.append(dateCell, orderCell, nameCell, phoneCell, actionCell);
           invoiceDuplicatesRows.appendChild(row);
         });
         invoiceDuplicatesMessage.textContent = `${result.duplicates.length} duplicate invoice row(s) found.`;
