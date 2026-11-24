@@ -770,12 +770,14 @@
         </section>
         <section class="return-section" id="returnDetailsSection" hidden>
           <div class="return-data-controls">
-            <label class="return-date-field" for="returnDateFilter">
-              <span>Filter by Date</span>
-              <input type="date" id="returnDateFilter" class="return-date-filter" />
+            <label class="return-date-field" for="returnDateFrom">
+              <span>From Date</span>
+              <input type="date" id="returnDateFrom" class="return-date-filter" />
             </label>
-            <button type="button" class="refresh-btn" id="resetReturnDate">Reset Date</button>
-            <button type="button" class="search-btn" id="loadReturnsButton">Load Data</button>
+            <label class="return-date-field" for="returnDateTo">
+              <span>To Date</span>
+              <input type="date" id="returnDateTo" class="return-date-filter" />
+            </label>
           </div>
           <div class="return-card" id="returnStats" hidden>
             <strong>Visible Void Total: </strong><span id="returnVoidTotal">0</span>
@@ -1160,6 +1162,8 @@
     const returnDetailsSection = document.getElementById('returnDetailsSection');
     const returnUpdateSection = document.getElementById('returnUpdateSection');
     const returnTableWrap = document.getElementById('returnTableWrap');
+    const returnDateFrom = document.getElementById('returnDateFrom');
+    const returnDateTo = document.getElementById('returnDateTo');
     const returnTableRows = document.getElementById('returnTableRows');
     const loadMoreReturnsButton = document.getElementById('loadMoreReturnsButton');
     const invoiceTable = document.querySelector('#all-invoice .invoice-table');
@@ -1266,6 +1270,15 @@
     let pathaoMerchantName = '';
     let previousBodyOverflow = '';
 
+    function formatLocalDateInput(date) {
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${date.getFullYear()}-${month}-${day}`;
+    }
+
+    const returnDefaultDate = formatLocalDateInput(new Date());
+    returnDateFrom.value = returnDefaultDate;
+    returnDateTo.value = returnDefaultDate;
     const currentMonth = new Date();
     paymentChargeMonth.value = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
 
@@ -1374,10 +1387,9 @@
       event.preventDefault();
       saveReturnOrder();
     });
-    document.getElementById('loadReturnsButton').addEventListener('click', () => loadReturnsData(false));
     loadMoreReturnsButton.addEventListener('click', () => loadReturnsData(true));
-    document.getElementById('resetReturnDate').addEventListener('click', () => {
-      document.getElementById('returnDateFilter').value = '';
+    [returnDateFrom, returnDateTo].forEach((input) => {
+      input.addEventListener('change', () => loadReturnsData(false));
     });
     document.getElementById('copyReturnAmount').addEventListener('click', copyReturnAmount);
     document.getElementById('returnVoidAmount').addEventListener('input', updateReturnStatusFromVoidAmount);
@@ -2657,6 +2669,7 @@
       document.getElementById('returnDetailsTab').classList.toggle('active', showDetails);
       document.getElementById('returnUpdateTab').setAttribute('aria-selected', String(!showDetails));
       document.getElementById('returnDetailsTab').setAttribute('aria-selected', String(showDetails));
+      if (showDetails) loadReturnsData(false);
     }
 
     async function loadReturnSheet() {
@@ -2773,19 +2786,33 @@
     async function loadReturnsData(append) {
       if (!returnSheetLoaded && !(await loadReturnSheet())) return;
       if (!returnSheetName) return showReturnMessage('The Returns sheet is not available.', true);
+      const requestId = ++returnDataRequestId;
+      const fromDate = returnDateFrom.value;
+      const toDate = returnDateTo.value;
+      if (fromDate && toDate && fromDate > toDate) {
+        returnOffset = 0;
+        returnVisibleVoidTotal = 0;
+        returnTableRows.replaceChildren();
+        returnTableWrap.hidden = true;
+        document.getElementById('returnStats').hidden = true;
+        loadMoreReturnsButton.hidden = true;
+        return showReturnMessage('From Date must be on or before To Date.', true);
+      }
       if (!append) {
         returnOffset = 0;
         returnVisibleVoidTotal = 0;
         returnTableRows.replaceChildren();
         document.getElementById('returnVoidTotal').textContent = '0';
+        returnTableWrap.hidden = true;
+        document.getElementById('returnStats').hidden = true;
+        loadMoreReturnsButton.hidden = true;
+        showReturnMessage('Loading return details...');
       }
-      const requestId = ++returnDataRequestId;
-      const date = document.getElementById('returnDateFilter').value;
       const params = new URLSearchParams({
         offset: String(returnOffset),
       });
-      if (date) params.set('date', date);
-      document.getElementById('loadReturnsButton').disabled = true;
+      if (fromDate) params.set('from', fromDate);
+      if (toDate) params.set('to', toDate);
       loadMoreReturnsButton.disabled = true;
       try {
         const response = await apiFetch(`/api/returns/data?${params.toString()}`);
@@ -2796,12 +2823,12 @@
         returnOffset += result.rows.length;
         returnTableWrap.hidden = false;
         document.getElementById('returnStats').hidden = false;
-        loadMoreReturnsButton.hidden = !result.hasMore || Boolean(date);
+        loadMoreReturnsButton.hidden = !result.hasMore;
+        returnMessage.hidden = true;
       } catch (error) {
         if (requestId === returnDataRequestId) showReturnMessage(error.message, true);
       } finally {
         if (requestId === returnDataRequestId) {
-          document.getElementById('loadReturnsButton').disabled = false;
           loadMoreReturnsButton.disabled = false;
         }
       }
