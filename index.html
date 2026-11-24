@@ -2627,6 +2627,9 @@
     }
 
     function openPopup(mainMsg, detailMsg = '') {
+      popupDetail.style.whiteSpace = '';
+      popupDetail.style.textAlign = '';
+      popupDetail.style.fontSize = '';
       popupText.textContent = mainMsg;
       popupDetail.textContent = detailMsg;
       duplicatePopup.style.display = 'flex';
@@ -4223,7 +4226,15 @@
         hideStatus();
         resetUploaderOnPopupClose = true;
         if (data.hasDuplicate) {
-          openPopup(data.popupMessage || 'already Save !', data.message);
+          const lines = [data.message,
+            `Already in sheet: ${data.duplicateInSheetCount || 0} | Repeated inside Excel file: ${data.duplicateInFileCount || 0}`];
+          (data.duplicateDetails || []).slice(0, 5).forEach((item) => {
+            lines.push(`${item.orderId} — ${item.reason} [${item.sheet}, row ${item.row}${item.firstSeen ? `, first: ${item.firstSeen}` : ''}]`);
+          });
+          openPopup(data.popupMessage || 'Duplicate rows skipped', lines.join('\n'));
+          popupDetail.style.whiteSpace = 'pre-line';
+          popupDetail.style.textAlign = 'left';
+          popupDetail.style.fontSize = '12px';
         } else {
           openPopup(data.message);
         }
