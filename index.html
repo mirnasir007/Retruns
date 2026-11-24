@@ -281,6 +281,8 @@
       display: flex; flex-direction: column; gap: 14px; width: min(1050px, 100%); max-height: 90vh; min-height: 0;
       padding: 22px; border: 1px solid var(--border); border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg);
     }
+    .courier-tracking-dialog { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 0; }
+    #courierTrackingPopup { padding: 0; }
     .courier-dialog.history-dialog { width: min(680px, 100%); }
     .courier-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .courier-dialog-header h2 { margin: 0; font-size: 19px; }
@@ -292,10 +294,10 @@
     .courier-popup-close:hover { background: var(--danger-soft); color: var(--danger); }
     .courier-result-message { margin: 0; padding: 10px; color: var(--muted); text-align: center; }
     .courier-result-message.error { color: var(--danger); }
-    .courier-result-table-wrap { min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
-    .courier-result-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
-    .courier-result-table th, .courier-result-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); text-align: center; }
-    .courier-result-table th { position: sticky; top: 0; background: var(--surface-2); color: var(--text); }
+    .courier-result-table-wrap { min-height: 0; flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .courier-result-table { width: 100%; table-layout: fixed; border-collapse: collapse; white-space: normal; font-size: 12px; }
+    .courier-result-table th, .courier-result-table td { padding: 9px 7px; border-bottom: 1px solid var(--border); text-align: center; overflow-wrap: anywhere; }
+    .courier-result-table th { position: sticky; top: 0; background: var(--surface-2); color: var(--text); font-size: 11px; }
     .courier-result-table tr:last-child td { border-bottom: 0; }
     .courier-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
     .courier-badge.pathao { background: #28a745; }
@@ -572,6 +574,18 @@
       .courier-history-cards { grid-template-columns: 1fr; }
       .search-controls { flex-wrap: wrap; }
       .search-controls input { flex: 1 1 100%; }
+      #courierTrackingPopup { padding: 0; }
+      #courierTrackingPopup .courier-tracking-dialog { padding: 12px; }
+      #courierTrackingPopup .courier-result-table-wrap { overflow-x: hidden; }
+      #courierTrackingPopup .courier-result-table,
+      #courierTrackingPopup .courier-result-table tbody,
+      #courierTrackingPopup .courier-result-table tr,
+      #courierTrackingPopup .courier-result-table td { display: block; width: 100%; }
+      #courierTrackingPopup .courier-result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+      #courierTrackingPopup .courier-result-table tr { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+      #courierTrackingPopup .courier-result-table td { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 7px 2px; text-align: right; }
+      #courierTrackingPopup .courier-result-table td::before { flex: 0 0 38%; color: var(--muted); font-weight: 650; text-align: left; content: attr(data-label); }
+      #courierTrackingPopup .courier-result-table tr:last-child { border-bottom: 0; }
     }
   </style>
 </head>
@@ -911,7 +925,7 @@
     </section>
   </div>
   <div class="courier-popup-overlay" id="courierTrackingPopup" role="dialog" aria-modal="true" aria-labelledby="courierTrackingTitle">
-    <section class="courier-dialog">
+    <section class="courier-dialog courier-tracking-dialog">
       <header class="courier-dialog-header">
         <div>
           <h2 id="courierTrackingTitle">Courier Details</h2>
@@ -3241,8 +3255,9 @@
       openCourierPopup(courierInfoPopup);
     }
 
-    function appendCourierCell(row, value) {
+    function appendCourierCell(row, label, value) {
       const cell = document.createElement('td');
+      cell.dataset.label = label;
       cell.textContent = value == null || value === '' ? 'N/A' : String(value);
       row.appendChild(cell);
       return cell;
@@ -3268,17 +3283,20 @@
         badge.className = `courier-badge${merchant === 'Bahok Courier' || merchant === 'Sumaiya Everyday' ? ' bahok' : ' pathao'}`;
         badge.textContent = merchant;
         merchantCell.appendChild(badge);
+        merchantCell.dataset.label = 'Merchant';
         row.appendChild(merchantCell);
 
-        appendCourierCell(row, info.consignment_id);
-        appendCourierCell(row, info.merchant_order_id);
+        appendCourierCell(row, 'Consignment ID', info.consignment_id);
+        appendCourierCell(row, 'Order ID', info.merchant_order_id);
         const recipientCell = document.createElement('td');
+        recipientCell.dataset.label = 'Recipient Info';
         recipientCell.textContent = `${info.recipient_name || 'N/A'} | Phone: ${info.recipient_phone || 'N/A'}`;
         row.appendChild(recipientCell);
-        appendCourierCell(row, info.delivery_address);
-        appendCourierCell(row, `৳${info.amount_to_collect || '0'}`);
+        appendCourierCell(row, 'Address', info.delivery_address);
+        appendCourierCell(row, 'Amount', `৳${info.amount_to_collect || '0'}`);
 
         const statusCell = document.createElement('td');
+        statusCell.dataset.label = 'Order Status';
         const orderStatus = String(info.order_status || 'N/A');
         const statusLower = orderStatus.toLowerCase();
         if (orderStatus === 'Assigned For Delivery' || orderStatus === 'Rider Assigned') {
@@ -3317,12 +3335,38 @@
         }
         row.appendChild(statusCell);
         const paymentCell = document.createElement('td');
+        paymentCell.dataset.label = 'Payment';
         const paymentStatus = document.createElement('strong');
         paymentStatus.textContent = info.payment_status || 'N/A';
         paymentCell.appendChild(paymentStatus);
         row.appendChild(paymentCell);
         courierTrackingRows.appendChild(row);
       });
+    }
+
+    function normalizeCourierOrderId(value) {
+      return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    async function requestCourierTracking(searchValue) {
+      const response = await fetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(searchValue)}`);
+      if (response.status === 404) return null;
+      const data = await readJsonResponse(response, 'Courier tracking failed');
+      if (data.status !== 'success') return null;
+      if (!Array.isArray(data.parcel_info)) throw new Error('Courier returned invalid tracking details.');
+      return data.parcel_info.length ? data : null;
+    }
+
+    async function findInvoiceByMerchantOrderId(orderId) {
+      const params = new URLSearchParams({ limit: '50', search: orderId });
+      const response = await apiFetch(`/api/invoices?${params}`);
+      const data = await readJsonResponse(response, 'Failed to look up this Merchant Order ID in All Invoice');
+      if (!Array.isArray(data.invoices)) throw new Error('Invoice search returned invalid results.');
+      const normalizedOrderId = normalizeCourierOrderId(orderId);
+      return data.invoices.find((invoice) => (
+        Array.isArray(invoice.values)
+        && normalizeCourierOrderId(invoice.values[1]) === normalizedOrderId
+      )) || null;
     }
 
     async function trackCourierParcel() {
@@ -3340,10 +3384,42 @@
       courierTrackButton.textContent = 'Searching...';
       setCourierTrackingMessage('Searching across all merchants...');
       try {
-        const response = await fetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(idInput)}`);
-        const data = await readJsonResponse(response, 'Courier tracking failed');
-        if (data.status !== 'success') throw new Error(data.message || 'Parcel not found.');
-        if (!Array.isArray(data.parcel_info)) throw new Error('Courier returned invalid tracking details.');
+        let data = await requestCourierTracking(idInput);
+        if (!data) {
+          const phoneInput = idInput.replace(/^\+?88/, '');
+          if (/^01\d{9}$/.test(phoneInput)) {
+            setCourierTrackingMessage('No parcel details found for this mobile number.', true);
+            return;
+          }
+
+          setCourierTrackingMessage('Looking up the Merchant Order ID in All Invoice...');
+          const invoice = await findInvoiceByMerchantOrderId(idInput);
+          if (!invoice) {
+            setCourierTrackingMessage('Merchant Order ID was not found in All Invoice or courier tracking.', true);
+            return;
+          }
+          const invoicePhone = String(invoice.values[3] || '').trim();
+          if (!invoicePhone) {
+            setCourierTrackingMessage('This invoice has no recipient mobile number to search courier records.', true);
+            return;
+          }
+
+          setCourierTrackingMessage('Searching courier records by the invoice mobile number...');
+          const phoneData = await requestCourierTracking(invoicePhone);
+          if (!phoneData) {
+            setCourierTrackingMessage('No courier records found for this invoice mobile number.', true);
+            return;
+          }
+          const requestedOrderId = normalizeCourierOrderId(idInput);
+          const matchingParcels = phoneData.parcel_info.filter((parcel) => (
+            normalizeCourierOrderId(parcel.merchant_order_id) === requestedOrderId
+          ));
+          if (!matchingParcels.length) {
+            setCourierTrackingMessage('Invoice found, but courier records do not contain this Merchant Order ID.', true);
+            return;
+          }
+          data = { ...phoneData, parcel_info: matchingParcels };
+        }
         if (!data.parcel_info.length) {
           setCourierTrackingMessage('No parcel details found.', true);
           return;
