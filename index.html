@@ -202,6 +202,9 @@
     .invoice-toolbar .page-title { margin: 0 auto 0 0; }
     .search-controls, .download-controls, .payment-search, .details-search { display: flex; align-items: center; gap: 8px; }
     .search-controls input { min-width: 240px; }
+    .courier-action-btn { white-space: nowrap; }
+    .courier-history-btn { border-color: #176b55; background: #176b55; color: #fff; }
+    .courier-history-btn:hover { border-color: #10533f; background: #10533f; color: #fff; }
     .download-controls { justify-content: flex-end; margin: 0 0 14px; color: var(--muted); font-size: 13px; font-weight: 500; }
     .download-controls label { display: flex; align-items: center; gap: 6px; }
     .payment-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -259,6 +262,27 @@
     .payment-summary-metric strong { color: var(--text); font-size: 19px; font-weight: 750; }
     .payment-summary-metric.pending { border-color: #fed7aa; background: #fff7ed; }
     .payment-summary-metric.pending strong { color: #c2410c; }
+    .change-status-search { display: flex; align-items: flex-end; gap: 10px; max-width: 720px; margin-bottom: 16px; }
+    .change-status-search label, .change-status-update label { display: grid; flex: 1; gap: 6px; color: var(--text-2); font-size: 13px; font-weight: 650; }
+    .change-status-search input, .change-status-update select {
+      width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--border-strong);
+      border-radius: 8px; background: #fff; color: var(--text); font: inherit;
+    }
+    .change-status-card { max-width: 720px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: var(--shadow-sm); }
+    .change-status-card[hidden] { display: none; }
+    .change-status-current { margin-bottom: 16px; color: var(--text-2); }
+    .change-status-current strong { margin-left: 6px; color: var(--text); }
+    .change-status-update { display: flex; align-items: flex-end; gap: 10px; }
+    .change-status-update label { min-width: 220px; }
+    .change-status-update .submit-btn { width: auto; min-width: 100px; flex: 0 0 auto; margin: 0; }
+    .change-status-message { max-width: 720px; margin: 0 0 14px; padding: 12px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); }
+    .change-status-message.error { background: var(--danger-soft); color: var(--danger); }
+    .duplicate-delete-box { max-width: 440px; }
+    .duplicate-delete-message { margin: 0 0 14px; color: var(--danger); font-size: 13px; }
+    .duplicate-delete-actions { display: flex; justify-content: center; gap: 10px; }
+    .duplicate-delete-actions .refresh-btn, .duplicate-delete-actions .submit-btn { width: auto; min-width: 105px; margin: 0; }
+    .duplicate-delete-confirm-btn { background: var(--danger); }
+    .duplicate-delete-confirm-btn:hover { background: #991b1b; }
     .invoice-duplicates-dialog { display: flex; flex-direction: column; gap: 14px; width: min(680px, calc(100vw - 32px)); max-height: min(80vh, 760px); padding: 22px; border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg); text-align: left; }
     .invoice-duplicates-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .invoice-duplicates-header h2 { margin: 0; font-size: 19px; }
@@ -269,21 +293,56 @@
     .invoice-duplicates-message.error { color: var(--danger); }
     .invoice-duplicates-table-wrap { min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
     .invoice-duplicates-table-wrap[hidden] { display: none; }
-    .courier-history-dialog { width: min(620px, calc(100vw - 32px)); max-height: min(85vh, 760px); overflow: auto; }
-    .courier-history-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .courier-history-card { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-2); }
-    .courier-history-card h3 { margin: 0 0 12px; color: var(--primary-dark); font-size: 15px; }
-    .courier-history-card.bahok h3 { color: var(--warning); }
-    .courier-history-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .courier-history-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .courier-history-metric { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
-    .courier-history-metric span { display: block; color: var(--muted); font-size: 11px; }
-    .courier-history-metric strong { display: block; margin-top: 4px; color: var(--text); font-size: 19px; }
-    .courier-status-link { padding: 0; border: 0; background: none; color: var(--primary); font: inherit; font-weight: 650; cursor: pointer; }
+    .courier-popup-overlay {
+      position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center;
+      padding: 20px; background: rgba(15, 23, 42, .55); backdrop-filter: blur(2px);
+    }
+    .courier-popup-overlay.open { display: flex; }
+    .courier-dialog {
+      display: flex; flex-direction: column; gap: 14px; width: min(1050px, 100%); max-height: 90vh; min-height: 0;
+      padding: 22px; border: 1px solid var(--border); border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg);
+    }
+    .courier-tracking-dialog { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 0; }
+    #courierTrackingPopup { padding: 0; }
+    .courier-dialog.history-dialog { width: min(680px, 100%); }
+    .courier-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .courier-dialog-header h2 { margin: 0; font-size: 19px; }
+    .courier-dialog-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .courier-popup-close {
+      flex: none; width: 34px; height: 34px; border: 0; border-radius: 8px; background: #eef1f6; color: var(--text-2);
+      font-size: 20px; cursor: pointer;
+    }
+    .courier-popup-close:hover { background: var(--danger-soft); color: var(--danger); }
+    .courier-result-message { margin: 0; padding: 10px; color: var(--muted); text-align: center; }
+    .courier-result-message.error { color: var(--danger); }
+    .courier-result-table-wrap { min-height: 0; flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .courier-result-table { width: 100%; table-layout: fixed; border-collapse: collapse; white-space: normal; font-size: 12px; }
+    .courier-result-table th, .courier-result-table td { padding: 9px 7px; border-bottom: 1px solid var(--border); text-align: center; overflow-wrap: anywhere; }
+    .courier-result-table th { position: sticky; top: 0; background: var(--surface-2); color: var(--text); font-size: 11px; }
+    .courier-result-table tr:last-child td { border-bottom: 0; }
+    .courier-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
+    .courier-badge.pathao { background: #28a745; }
+    .courier-badge.bahok { background: #f7941d; }
+    .courier-status-link { padding: 0; border: 0; background: transparent; color: var(--info); font-weight: 700; cursor: pointer; }
     .courier-status-link:hover { text-decoration: underline; }
-    .courier-status-detail { white-space: pre-line; color: var(--text-2); line-height: 1.6; }
-    #courierRiderCallButton { display: inline-block; margin-bottom: 12px; color: var(--primary); font-weight: 650; text-decoration: none; }
-    #courierRiderCallButton[hidden] { display: none; }
+    .courier-status-hint { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .courier-history-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .courier-history-card { min-height: 190px; padding: 20px; border: 1px solid #e6ece9; border-radius: 12px; background: #fbfdfc; }
+    .courier-history-card h3 { margin: 0 0 16px; color: #176b55; font-size: 16px; }
+    .courier-history-card.bahok h3 { color: #d87a16; }
+    .courier-new-customer { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 20px; background: #e8f5ee; color: #176b55; font-size: 14px; font-weight: 700; }
+    .courier-new-customer::before { content: ""; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #24a06b; }
+    .courier-history-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .courier-history-metric { padding: 12px; border: 1px solid #edf1ef; border-radius: 8px; background: #fff; }
+    .courier-history-metric span { display: block; color: #71807b; font-size: 12px; }
+    .courier-history-metric strong { display: block; margin-top: 4px; color: #22332e; font-size: 21px; }
+    .courier-history-rating { margin: 14px 0 0; color: #52645e; font-size: 14px; }
+    .courier-history-error { margin: 0; color: var(--danger); font-size: 14px; line-height: 1.5; }
+    .courier-history-loading { grid-column: 1 / -1; padding: 28px; color: var(--muted); text-align: center; }
+    .courier-info-dialog { width: min(420px, 100%); }
+    .courier-info-content { color: var(--text-2); line-height: 1.8; overflow-wrap: anywhere; }
+    .courier-info-call { display: inline-block; margin-top: 10px; padding: 8px 20px; border-radius: 4px; background: #28a745; color: #fff; text-decoration: none; font-weight: 700; }
+    .courier-info-call[hidden] { display: none; }
     #bahokEntryPopup { z-index: 1100; }
     .bahok-entry-dialog { display: flex; flex-direction: column; gap: 14px; width: min(1180px, calc(100vw - 32px)); max-height: min(90vh, 900px); padding: 22px; border-radius: 15px; background: #fff; box-shadow: var(--shadow-lg); text-align: left; }
     .bahok-entry-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -340,6 +399,7 @@
     .tone-danger  { background: var(--danger-soft) !important; color: var(--danger) !important; border-color: #fecaca !important; }
     .tone-info    { background: var(--info-soft) !important; color: var(--info) !important; border-color: #bae6fd !important; }
     .tone-neutral { background: #eef1f6 !important; color: var(--text-2) !important; border-color: var(--border) !important; }
+    .return-status-plain { color: var(--danger) !important; font-weight: 700; }
     .pill {
       display: inline-block;
       padding: 3px 10px;
@@ -379,6 +439,8 @@
     .save-icon:hover { background: #166534; }
     .clear-icon { color: var(--danger); }
     .clear-icon:hover { background: var(--danger-soft); }
+    .duplicate-delete-btn { color: var(--danger); }
+    .duplicate-delete-btn:hover { background: var(--danger-soft); }
     .payment-actions { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
     .payment-actions .cell-action:disabled { opacity: .45; cursor: not-allowed; }
     .payment-actions .cell-action.payment-checked { color: var(--success); opacity: 1; background: var(--success-soft); }
@@ -526,50 +588,30 @@
       .dashboard-actions { width: 100%; justify-content: space-between; }
       .dashboard-section-header { align-items: flex-start; flex-direction: column; }
       .payment-charge-grid { grid-template-columns: 1fr; }
-      .courier-history-cards { grid-template-columns: 1fr; }
       .payment-charge-controls { align-items: stretch; flex-direction: column; }
       .payment-charge-controls input { width: 100%; }
+      .change-status-search, .change-status-update { align-items: stretch; flex-direction: column; }
+      .change-status-search .search-btn, .change-status-update .submit-btn { width: 100%; }
       .details-overlay { padding: 0; }
       .details-panel { padding: 14px; border-radius: 0; }
       .details-title { font-size: 18px; }
-    }
-
-    /* ---------- Courier / Check popups (curier.html style: every heading visible, no scrollbar) ---------- */
-    .courier-results-dialog { width: min(1240px, calc(100vw - 24px)); max-height: 92vh; overflow-y: auto; }
-    .courier-results-dialog .invoice-duplicates-table-wrap { overflow: visible; }
-    .courier-results-dialog .courier-results-table { width: 100%; white-space: normal; font-size: 13px; }
-    .courier-results-dialog .courier-results-table th,
-    .courier-results-dialog .courier-results-table td { padding: 10px 12px; text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
-    .courier-results-dialog .courier-results-table th { position: static; white-space: nowrap; }
-    .courier-results-dialog .courier-results-table .nowrap { white-space: nowrap; }
-    .courier-date { margin-bottom: 4px; color: var(--text-2); font-size: 11px; font-weight: 700; white-space: nowrap; }
-    .courier-recipient-line { white-space: nowrap; }
-    .courier-status-link.hold { color: var(--danger); }
-    .courier-click-hint { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 400; }
-    .courier-status-link.hold .courier-click-hint { color: var(--danger); }
-    #courierRiderCallButton { margin: 10px 0 12px; padding: 8px 20px; border-radius: 6px; background: #28a745; color: #fff; font-weight: 700; text-decoration: none; }
-    #courierRiderCallButton:hover { background: #218838; }
-    .courier-history-dialog { width: min(620px, calc(100vw - 24px)); max-height: 92vh; overflow-y: auto; }
-    .courier-history-cards { gap: 16px; }
-    .courier-history-card { min-height: 170px; padding: 20px; border-radius: 12px; background: #fbfdfc; }
-    .courier-history-card h3 { margin-bottom: 16px; font-size: 16px; color: #176b55; }
-    .courier-history-card.bahok h3 { color: #d87a16; }
-    .courier-history-metrics { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .courier-history-metric { padding: 12px; }
-    .courier-history-metric strong { font-size: 21px; }
-    .courier-new-customer { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 20px; background: #e8f5ee; color: #176b55; font-size: 14px; font-weight: 700; }
-    .courier-new-customer::before { content: ""; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #24a06b; }
-    .courier-history-card .courier-history-error { color: var(--danger); }
-    @media (max-width: 760px) {
-      .courier-results-dialog { padding: 14px; }
-      .courier-results-dialog .courier-results-table thead { display: none; }
-      .courier-results-dialog .courier-results-table,
-      .courier-results-dialog .courier-results-table tbody,
-      .courier-results-dialog .courier-results-table tr { display: block; width: 100%; }
-      .courier-results-dialog .courier-results-table tr { margin-bottom: 10px; padding: 6px 0; border: 1px solid var(--border); border-radius: 10px; }
-      .courier-results-dialog .courier-results-table td { display: flex; justify-content: space-between; gap: 12px; padding: 6px 12px; border-bottom: 0; text-align: right; }
-      .courier-results-dialog .courier-results-table td::before { content: attr(data-label); flex: none; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: left; }
-      .courier-recipient-line { white-space: normal; }
+      .courier-popup-overlay { padding: 10px; }
+      .courier-dialog { padding: 16px; }
+      .courier-history-cards { grid-template-columns: 1fr; }
+      .search-controls { flex-wrap: wrap; }
+      .search-controls input { flex: 1 1 100%; }
+      #courierTrackingPopup { padding: 0; }
+      #courierTrackingPopup .courier-tracking-dialog { padding: 12px; }
+      #courierTrackingPopup .courier-result-table-wrap { overflow-x: hidden; }
+      #courierTrackingPopup .courier-result-table,
+      #courierTrackingPopup .courier-result-table tbody,
+      #courierTrackingPopup .courier-result-table tr,
+      #courierTrackingPopup .courier-result-table td { display: block; width: 100%; }
+      #courierTrackingPopup .courier-result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+      #courierTrackingPopup .courier-result-table tr { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+      #courierTrackingPopup .courier-result-table td { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 7px 2px; text-align: right; }
+      #courierTrackingPopup .courier-result-table td::before { flex: 0 0 38%; color: var(--muted); font-weight: 650; text-align: left; content: attr(data-label); }
+      #courierTrackingPopup .courier-result-table tr:last-child { border-bottom: 0; }
     }
   </style>
 </head>
@@ -658,10 +700,10 @@
         <div class="invoice-toolbar">
           <h1 class="page-title">All Invoice</h1>
           <form class="search-controls" id="invoiceSearchForm">
-            <input id="invoiceSearch" type="search" placeholder="Search invoices, name, Merchant Order ID or mobile" aria-label="Search invoices, customer name, Merchant Order ID or mobile" />
+            <input id="invoiceSearch" type="search" placeholder="Search" aria-label="Search invoices" />
             <button type="submit" class="search-btn" id="searchInvoicesBtn">Search</button>
-            <button type="button" class="refresh-btn" id="courierSearchButton">Courier</button>
-            <button type="button" class="refresh-btn" id="customerHistoryButton">Check</button>
+            <button type="button" class="refresh-btn courier-action-btn" id="courierTrackButton">Courier</button>
+            <button type="button" class="refresh-btn courier-action-btn courier-history-btn" id="courierHistoryButton">Check</button>
           </form>
           <button type="button" class="refresh-btn" id="checkInvoiceDuplicatesBtn">Duplicate Check</button>
           <button type="button" class="refresh-btn" id="refreshInvoicesBtn">Refresh</button>
@@ -707,7 +749,6 @@
                 <select id="returnNewStatus">
                   <option value="Return Receved">Return Receved</option>
                   <option value="Partial Delivery">Partial Delivery</option>
-                  <option value="Delivered">Delivered</option>
                   <option value="Exchange">Exchange</option>
                 </select>
               </div>
@@ -729,12 +770,14 @@
         </section>
         <section class="return-section" id="returnDetailsSection" hidden>
           <div class="return-data-controls">
-            <label class="return-date-field" for="returnDateFilter">
-              <span>Filter by Date</span>
-              <input type="date" id="returnDateFilter" class="return-date-filter" />
+            <label class="return-date-field" for="returnDateFrom">
+              <span>From Date</span>
+              <input type="date" id="returnDateFrom" class="return-date-filter" />
             </label>
-            <button type="button" class="refresh-btn" id="resetReturnDate">Reset Date</button>
-            <button type="button" class="search-btn" id="loadReturnsButton">Load Data</button>
+            <label class="return-date-field" for="returnDateTo">
+              <span>To Date</span>
+              <input type="date" id="returnDateTo" class="return-date-filter" />
+            </label>
           </div>
           <div class="return-card" id="returnStats" hidden>
             <strong>Visible Void Total: </strong><span id="returnVoidTotal">0</span>
@@ -770,6 +813,7 @@
             <button type="button" class="payment-tab" data-payment-provider="pathao" role="tab" aria-selected="false">Pathao</button>
             <button type="button" class="payment-tab" data-payment-provider="bahok" role="tab" aria-selected="false">Bahok</button>
             <button type="button" class="payment-tab" data-payment-provider="delivery-charge" role="tab" aria-selected="false">Delivery Charge</button>
+            <button type="button" class="payment-tab" data-payment-provider="change-status" role="tab" aria-selected="false">Changes Status</button>
           </div>
         </div>
         <section id="paymentSummaryView" hidden>
@@ -797,6 +841,32 @@
             <article class="payment-charge-card"><span>Bahok Delivery Charge</span><strong id="bahokDeliveryCharge">—</strong></article>
           </div>
           <div class="invoice-message payment-charge-message" id="paymentChargeMessage" role="status" hidden></div>
+        </section>
+        <section id="paymentChangeStatusView" hidden>
+          <form class="change-status-search" id="changeStatusSearchForm">
+            <label for="changeStatusOrderId">Merchant Order Id
+              <input id="changeStatusOrderId" type="search" required placeholder="Enter Merchant Order Id" />
+            </label>
+            <button type="submit" class="search-btn" id="changeStatusSearchButton">Search</button>
+          </form>
+          <p class="change-status-message" id="changeStatusMessage" role="status" hidden></p>
+          <section class="change-status-card" id="changeStatusResult" hidden>
+            <div class="change-status-current">Current Delivery Status:<strong id="changeStatusCurrent"></strong></div>
+            <form class="change-status-update" id="changeStatusUpdateForm">
+              <label for="changeStatusSelect">Change Status
+                <select id="changeStatusSelect" required>
+                  <option value="" selected disabled>Select status</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Partial Delivery">Partial Delivery</option>
+                  <option value="Returned">Returned</option>
+                  <option value="Return Received">Return Received</option>
+                  <option value="Exchanges">Exchanges</option>
+                  <option value="Lost">Lost</option>
+                </select>
+              </label>
+              <button type="submit" class="submit-btn" id="changeStatusUpdateButton">Update</button>
+            </form>
+          </section>
         </section>
         <div class="payment-toolbar" id="paymentToolbar">
           <h2 class="payment-panel-title" id="paymentMerchantTitle" hidden></h2>
@@ -899,7 +969,7 @@
       <p class="invoice-duplicates-message" id="invoiceDuplicatesMessage" role="status">Checking recent invoices...</p>
       <div class="invoice-duplicates-table-wrap" id="invoiceDuplicatesTableWrap" hidden>
         <table class="invoice-table">
-          <thead><tr><th>Date</th><th>Merchant Order Id</th><th>Customer Name</th><th>Customer Number</th></tr></thead>
+          <thead><tr><th>Date</th><th>Merchant Order Id</th><th>Customer Name</th><th>Customer Number</th><th>Action</th></tr></thead>
           <tbody id="invoiceDuplicatesRows"></tbody>
         </table>
       </div>
@@ -908,55 +978,56 @@
       </div>
     </section>
   </div>
-  <div class="popup-overlay" id="courierResultsPopup" role="dialog" aria-modal="true" aria-labelledby="courierResultsTitle">
-    <section class="invoice-duplicates-dialog courier-results-dialog">
-      <header class="invoice-duplicates-header">
+  <div class="popup-overlay" id="duplicateDeleteConfirmPopup" role="dialog" aria-modal="true" aria-labelledby="duplicateDeleteTitle">
+    <section class="popup-box duplicate-delete-box">
+      <h2 class="popup-title" id="duplicateDeleteTitle">Delete entire sheet row?</h2>
+      <p class="popup-sub" id="duplicateDeletePrompt"></p>
+      <p class="duplicate-delete-message" id="duplicateDeleteMessage" role="status" hidden></p>
+      <div class="duplicate-delete-actions">
+        <button type="button" class="refresh-btn" id="cancelDuplicateDelete">Cancel</button>
+        <button type="button" class="submit-btn duplicate-delete-confirm-btn" id="confirmDuplicateDelete">Delete row</button>
+      </div>
+    </section>
+  </div>
+  <div class="courier-popup-overlay" id="courierTrackingPopup" role="dialog" aria-modal="true" aria-labelledby="courierTrackingTitle">
+    <section class="courier-dialog courier-tracking-dialog">
+      <header class="courier-dialog-header">
         <div>
-          <h2 id="courierResultsTitle">Courier details</h2>
-          <p id="courierResultsSubtitle"></p>
+          <h2 id="courierTrackingTitle">Courier Details</h2>
+          <p class="courier-dialog-subtitle" id="courierTrackingSubtitle"></p>
         </div>
-        <button type="button" class="invoice-duplicates-close" id="closeCourierResults" aria-label="Close courier details">×</button>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierTrackingPopup" aria-label="Close courier details">×</button>
       </header>
-      <p class="invoice-duplicates-message" id="courierResultsMessage" role="status"></p>
-      <div class="invoice-duplicates-table-wrap" id="courierResultsTableWrap" hidden>
-        <table class="invoice-table courier-results-table">
-          <thead>
-            <tr>
-              <th>Courier</th><th>Consignment ID</th><th>Merchant Order ID</th><th>Recipient</th>
-              <th>Address</th><th>Amount</th><th>Status</th><th>Payment</th>
-            </tr>
-          </thead>
-          <tbody id="courierResultsRows"></tbody>
+      <p class="courier-result-message" id="courierTrackingMessage" role="status" hidden></p>
+      <div class="courier-result-table-wrap" id="courierTrackingTableWrap" hidden>
+        <table class="courier-result-table">
+          <thead><tr><th>Merchant</th><th>Consignment ID</th><th>Order ID</th><th>Recipient Info</th><th>Address</th><th>Amount</th><th>Order Status</th><th>Payment</th></tr></thead>
+          <tbody id="courierTrackingRows"></tbody>
         </table>
       </div>
-      <div class="details-actions">
-        <button type="button" class="popup-close-btn" id="closeCourierResultsButton">Close</button>
-      </div>
     </section>
   </div>
-  <div class="popup-overlay" id="customerHistoryPopup" role="dialog" aria-modal="true" aria-labelledby="customerHistoryTitle">
-    <section class="invoice-duplicates-dialog courier-history-dialog">
-      <header class="invoice-duplicates-header">
+  <div class="courier-popup-overlay" id="courierHistoryPopup" role="dialog" aria-modal="true" aria-labelledby="courierHistoryTitle">
+    <section class="courier-dialog history-dialog">
+      <header class="courier-dialog-header">
         <div>
-          <h2 id="customerHistoryTitle">Customer Courier History</h2>
-          <p>Delivery records for <strong id="customerHistoryPhone"></strong></p>
+          <h2 id="courierHistoryTitle">Customer Courier History</h2>
+          <p class="courier-dialog-subtitle">Delivery records for <strong id="courierHistoryPhone"></strong></p>
         </div>
-        <button type="button" class="invoice-duplicates-close" id="closeCustomerHistory" aria-label="Close customer history">×</button>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierHistoryPopup" aria-label="Close courier history">×</button>
       </header>
-      <p class="invoice-duplicates-message" id="customerHistoryMessage" role="status"></p>
-      <div class="courier-history-cards" id="customerHistoryCards"></div>
-      <div class="details-actions">
-        <button type="button" class="popup-close-btn" id="closeCustomerHistoryButton">Close</button>
-      </div>
+      <div class="courier-history-cards" id="courierHistoryCards" aria-live="polite"></div>
     </section>
   </div>
-  <div class="popup-overlay" id="courierStatusPopup" role="dialog" aria-modal="true" aria-labelledby="courierStatusTitle">
-    <div class="popup-box">
-      <div class="popup-title" id="courierStatusTitle"></div>
-      <p class="courier-status-detail" id="courierStatusDetail"></p>
-      <a class="rider-phone-btn" id="courierRiderCallButton" hidden></a>
-      <button type="button" class="popup-close-btn" id="closeCourierStatusButton">Close</button>
-    </div>
+  <div class="courier-popup-overlay" id="courierInfoPopup" role="dialog" aria-modal="true" aria-labelledby="courierInfoTitle">
+    <section class="courier-dialog courier-info-dialog">
+      <header class="courier-dialog-header">
+        <h2 id="courierInfoTitle"></h2>
+        <button type="button" class="courier-popup-close" data-close-courier-popup="courierInfoPopup" aria-label="Close courier information">×</button>
+      </header>
+      <div class="courier-info-content" id="courierInfoContent"></div>
+      <a class="courier-info-call" id="courierInfoCall" hidden>Call Rider</a>
+    </section>
   </div>
   <div class="popup-overlay" id="pathaoMerchantPopup" role="dialog" aria-modal="true" aria-labelledby="pathaoMerchantPopupTitle">
     <div class="popup-box">
@@ -990,6 +1061,7 @@
   <script src="./config.js"></script>
   <script>
     const API_BASE_URL = String(window.PFF_API_BASE_URL || '').replace(/\/+$/, '');
+    const COURIER_API_BASE_URL = 'https://all-deliveries-overview-backend-019x.onrender.com';
     let fullAccessToken = '';
 
     function apiFetch(url, options = {}) {
@@ -1001,7 +1073,12 @@
         : url;
       const headers = new Headers(options.headers || {});
       if (fullAccessToken) headers.set('Authorization', `Bearer ${fullAccessToken}`);
-      return window.fetch(requestUrl, { ...options, headers, credentials: 'omit' });
+      return window.fetch(requestUrl, {
+        ...options,
+        headers,
+        credentials: 'omit',
+        cache: options.cache || 'no-store',
+      });
     }
 
     const navLinks = document.querySelectorAll('.nav-link');
@@ -1025,6 +1102,16 @@
     const paymentSummaryView = document.getElementById('paymentSummaryView');
     const paymentSummaryMessage = document.getElementById('paymentSummaryMessage');
     const paymentDeliveryChargeView = document.getElementById('paymentDeliveryChargeView');
+    const paymentChangeStatusView = document.getElementById('paymentChangeStatusView');
+    const changeStatusSearchForm = document.getElementById('changeStatusSearchForm');
+    const changeStatusOrderId = document.getElementById('changeStatusOrderId');
+    const changeStatusSearchButton = document.getElementById('changeStatusSearchButton');
+    const changeStatusMessage = document.getElementById('changeStatusMessage');
+    const changeStatusResult = document.getElementById('changeStatusResult');
+    const changeStatusCurrent = document.getElementById('changeStatusCurrent');
+    const changeStatusUpdateForm = document.getElementById('changeStatusUpdateForm');
+    const changeStatusSelect = document.getElementById('changeStatusSelect');
+    const changeStatusUpdateButton = document.getElementById('changeStatusUpdateButton');
     const paymentChargeMonth = document.getElementById('paymentChargeMonth');
     const bahokEntryPopup = document.getElementById('bahokEntryPopup');
     const bahokEntryDate = document.getElementById('bahokEntryDate');
@@ -1080,6 +1167,8 @@
     const returnDetailsSection = document.getElementById('returnDetailsSection');
     const returnUpdateSection = document.getElementById('returnUpdateSection');
     const returnTableWrap = document.getElementById('returnTableWrap');
+    const returnDateFrom = document.getElementById('returnDateFrom');
+    const returnDateTo = document.getElementById('returnDateTo');
     const returnTableRows = document.getElementById('returnTableRows');
     const loadMoreReturnsButton = document.getElementById('loadMoreReturnsButton');
     const invoiceTable = document.querySelector('#all-invoice .invoice-table');
@@ -1088,26 +1177,30 @@
     const invoiceSearchForm = document.getElementById('invoiceSearchForm');
     const invoiceSearch = document.getElementById('invoiceSearch');
     const searchInvoicesBtn = document.getElementById('searchInvoicesBtn');
-    const courierSearchButton = document.getElementById('courierSearchButton');
-    const customerHistoryButton = document.getElementById('customerHistoryButton');
-    const courierResultsPopup = document.getElementById('courierResultsPopup');
-    const courierResultsSubtitle = document.getElementById('courierResultsSubtitle');
-    const courierResultsMessage = document.getElementById('courierResultsMessage');
-    const courierResultsTableWrap = document.getElementById('courierResultsTableWrap');
-    const courierResultsRows = document.getElementById('courierResultsRows');
-    const customerHistoryPopup = document.getElementById('customerHistoryPopup');
-    const customerHistoryPhone = document.getElementById('customerHistoryPhone');
-    const customerHistoryMessage = document.getElementById('customerHistoryMessage');
-    const customerHistoryCards = document.getElementById('customerHistoryCards');
-    const courierStatusPopup = document.getElementById('courierStatusPopup');
-    const courierStatusTitle = document.getElementById('courierStatusTitle');
-    const courierStatusDetail = document.getElementById('courierStatusDetail');
-    const courierRiderCallButton = document.getElementById('courierRiderCallButton');
     const checkInvoiceDuplicatesBtn = document.getElementById('checkInvoiceDuplicatesBtn');
+    const courierTrackButton = document.getElementById('courierTrackButton');
+    const courierHistoryButton = document.getElementById('courierHistoryButton');
+    const courierTrackingPopup = document.getElementById('courierTrackingPopup');
+    const courierTrackingSubtitle = document.getElementById('courierTrackingSubtitle');
+    const courierTrackingMessage = document.getElementById('courierTrackingMessage');
+    const courierTrackingTableWrap = document.getElementById('courierTrackingTableWrap');
+    const courierTrackingRows = document.getElementById('courierTrackingRows');
+    const courierHistoryPopup = document.getElementById('courierHistoryPopup');
+    const courierHistoryPhone = document.getElementById('courierHistoryPhone');
+    const courierHistoryCards = document.getElementById('courierHistoryCards');
+    const courierInfoPopup = document.getElementById('courierInfoPopup');
+    const courierInfoTitle = document.getElementById('courierInfoTitle');
+    const courierInfoContent = document.getElementById('courierInfoContent');
+    const courierInfoCall = document.getElementById('courierInfoCall');
     const invoiceDuplicatesPopup = document.getElementById('invoiceDuplicatesPopup');
     const invoiceDuplicatesMessage = document.getElementById('invoiceDuplicatesMessage');
     const invoiceDuplicatesTableWrap = document.getElementById('invoiceDuplicatesTableWrap');
     const invoiceDuplicatesRows = document.getElementById('invoiceDuplicatesRows');
+    const duplicateDeleteConfirmPopup = document.getElementById('duplicateDeleteConfirmPopup');
+    const duplicateDeletePrompt = document.getElementById('duplicateDeletePrompt');
+    const duplicateDeleteMessage = document.getElementById('duplicateDeleteMessage');
+    const cancelDuplicateDelete = document.getElementById('cancelDuplicateDelete');
+    const confirmDuplicateDelete = document.getElementById('confirmDuplicateDelete');
     const invoiceDownloadForm = document.getElementById('invoiceDownloadForm');
     const clearInvoiceDateFilterBtn = document.getElementById('clearInvoiceDateFilterBtn');
     const bahokEntryOpenButton = document.getElementById('bahokEntryOpenButton');
@@ -1128,7 +1221,7 @@
       { title: 'Payment Date', index: 11 },
       { title: 'Payment Id', index: 12 }
     ];
-    const statuses = ['Paid', 'Partial Delivery', 'Partial Delivered', 'Returned', 'Return Receved', 'Exchanges'];
+    const statuses = ['Paid', 'Partial Delivery', 'Returned', 'Return Received', 'Exchanges', 'Lost'];
     const spreadsheetHeaders = [
       'Date', 'Delivery Status', 'Merchant Order Id', 'RecipientName(*)',
       'Recipient Phone(*)', 'Recipient Address(*)', 'Amount', 'Quantity',
@@ -1143,6 +1236,7 @@
 
     let currentFile = null;
     let resetUploaderOnPopupClose = false;
+    let pendingDuplicateDelete = null;
     let currentSearch = '';
     let nextBeforeRow = null;
     let nextSearchOffset = 0;
@@ -1158,11 +1252,17 @@
     let bahokEntryInstructionValues = new Map();
     let bahokEntryMode = 'orders';
     let fullAccessUnlocked = false;
+    let realtimeSyncRunning = false;
+    let lastRealtimeSyncAt = 0;
+    let lastProviderRealtimeSyncAt = 0;
+    const REALTIME_SYNC_INTERVAL_MS = 15000;
+    const PROVIDER_REALTIME_SYNC_INTERVAL_MS = 60000;
     let pathaoMerchantKey = '';
     let pathaoCurrentPage = 1;
     let pathaoTotalPages = 1;
     let pathaoRequestId = 0;
     let activePaymentProvider = '';
+    let changeStatusInvoice = null;
     let bahokCurrentPage = 1;
     let bahokTotalPages = 1;
     let returnSheetLoaded = false;
@@ -1180,6 +1280,15 @@
     let pathaoMerchantName = '';
     let previousBodyOverflow = '';
 
+    function formatLocalDateInput(date) {
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${date.getFullYear()}-${month}-${day}`;
+    }
+
+    const returnDefaultDate = formatLocalDateInput(new Date());
+    returnDateFrom.value = returnDefaultDate;
+    returnDateTo.value = returnDefaultDate;
     const currentMonth = new Date();
     paymentChargeMonth.value = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
 
@@ -1288,10 +1397,9 @@
       event.preventDefault();
       saveReturnOrder();
     });
-    document.getElementById('loadReturnsButton').addEventListener('click', () => loadReturnsData(false));
     loadMoreReturnsButton.addEventListener('click', () => loadReturnsData(true));
-    document.getElementById('resetReturnDate').addEventListener('click', () => {
-      document.getElementById('returnDateFilter').value = '';
+    [returnDateFrom, returnDateTo].forEach((input) => {
+      input.addEventListener('change', () => loadReturnsData(false));
     });
     document.getElementById('copyReturnAmount').addEventListener('click', copyReturnAmount);
     document.getElementById('returnVoidAmount').addEventListener('input', updateReturnStatusFromVoidAmount);
@@ -1300,6 +1408,14 @@
       link.addEventListener('click', () => {
         selectPaymentProvider(link.dataset.paymentProvider);
       });
+    });
+    changeStatusSearchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      searchInvoiceForStatus();
+    });
+    changeStatusUpdateForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      updateInvoiceStatus();
     });
     paymentChargeMonth.addEventListener('change', loadPaymentDeliveryCharge);
     document.getElementById('dashboardCourierFilter').addEventListener('change', loadDashboard);
@@ -1310,7 +1426,7 @@
     });
 
     function selectPaymentProvider(provider) {
-      if (!['summary', 'pathao', 'bahok', 'delivery-charge'].includes(provider)) return;
+      if (!['summary', 'pathao', 'bahok', 'delivery-charge', 'change-status'].includes(provider)) return;
       pathaoRequestId++;
       paymentSummaryRequestId++;
       paymentChargeRequestId++;
@@ -1333,8 +1449,9 @@
       paymentMessage.hidden = true;
       paymentSummaryView.hidden = provider !== 'summary';
       paymentDeliveryChargeView.hidden = provider !== 'delivery-charge';
+      paymentChangeStatusView.hidden = provider !== 'change-status';
       paymentChargeMessage.hidden = true;
-      paymentToolbar.hidden = provider === 'summary' || provider === 'delivery-charge';
+      paymentToolbar.hidden = provider === 'summary' || provider === 'delivery-charge' || provider === 'change-status';
 
       if (provider === 'summary') {
         loadPaymentSummary();
@@ -1342,6 +1459,14 @@
       }
       if (provider === 'delivery-charge') {
         loadPaymentDeliveryCharge();
+        return;
+      }
+      if (provider === 'change-status') {
+        activePaymentProvider = provider;
+        changeStatusSearchForm.reset();
+        changeStatusResult.hidden = true;
+        changeStatusMessage.hidden = true;
+        changeStatusInvoice = null;
         return;
       }
       if (provider === 'pathao') {
@@ -1364,6 +1489,76 @@
         'Received Amount', 'Payment Method', 'Date', 'Status', 'Action'
       ]);
       loadBahokPayments();
+    }
+
+    function showChangeStatusMessage(message, isError = false) {
+      changeStatusMessage.textContent = message;
+      changeStatusMessage.classList.toggle('error', isError);
+      changeStatusMessage.hidden = false;
+    }
+
+    async function searchInvoiceForStatus() {
+      const orderId = changeStatusOrderId.value.trim();
+      if (!orderId) return;
+      changeStatusInvoice = null;
+      changeStatusResult.hidden = true;
+      changeStatusMessage.hidden = true;
+      changeStatusSearchButton.disabled = true;
+      try {
+        const params = new URLSearchParams({ limit: '50', search: orderId });
+        const response = await apiFetch(`/api/invoices?${params}`);
+        const result = await readJsonResponse(response, 'Failed to search the invoice sheet');
+        if (!Array.isArray(result.invoices)) throw new Error('Invoice search returned invalid results.');
+        const normalizedOrderId = orderId.toLowerCase();
+        changeStatusInvoice = result.invoices.find((invoice) => (
+          Array.isArray(invoice.values)
+          && String(invoice.values[1] || '').trim().toLowerCase() === normalizedOrderId
+        )) || null;
+        if (!changeStatusInvoice) {
+          showChangeStatusMessage(`Merchant Order Id "${orderId}" was not found in All Invoice.`, true);
+          return;
+        }
+        changeStatusCurrent.textContent = String(changeStatusInvoice.values[0] || '—');
+        changeStatusSelect.value = '';
+        changeStatusResult.hidden = false;
+      } catch (error) {
+        showChangeStatusMessage(error.message || 'Failed to search the invoice sheet.', true);
+      } finally {
+        changeStatusSearchButton.disabled = false;
+      }
+    }
+
+    async function updateInvoiceStatus() {
+      if (!changeStatusInvoice) {
+        showChangeStatusMessage('Search for a Merchant Order Id first.', true);
+        return;
+      }
+      const status = changeStatusSelect.value;
+      if (!status) {
+        showChangeStatusMessage('Choose a delivery status.', true);
+        return;
+      }
+      changeStatusUpdateButton.disabled = true;
+      changeStatusMessage.hidden = true;
+      try {
+        const response = await apiFetch(`/api/invoices/${changeStatusInvoice.rowNumber}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, orderId: changeStatusInvoice.values[1] }),
+        });
+        const result = await readJsonResponse(response, 'Failed to update delivery status');
+        if (result.success !== true || result.status !== status) {
+          throw new Error('Server did not confirm the delivery status update.');
+        }
+        changeStatusInvoice.values[0] = result.status;
+        changeStatusCurrent.textContent = result.status;
+        changeStatusSelect.value = '';
+        showChangeStatusMessage(`Delivery status updated to ${result.status}.`);
+      } catch (error) {
+        showChangeStatusMessage(error.message || 'Failed to update delivery status.', true);
+      } finally {
+        changeStatusUpdateButton.disabled = false;
+      }
     }
 
     paymentSearchForm.addEventListener('submit', (event) => {
@@ -1758,7 +1953,8 @@
       const value = String(status || '').trim().toLowerCase();
       if (value === 'paid' || value === 'delivered') return 'success';
       if (value === 'unpaid' || value.startsWith('partial')) return 'warning';
-      if (value === 'returned' || value === 'return receved' || value.startsWith('# return') || value === 'cancel') return 'danger';
+      if (value === 'returned' || value === 'return receved' || value === 'return received' ||
+          value === 'lost' || value.startsWith('# return') || value === 'cancel') return 'danger';
       if (value === 'exchanges') return 'info';
       return 'neutral';
     }
@@ -1996,6 +2192,9 @@
         const statusCell = document.createElement('td');
         if (match.importStatus === 'Found in All Invoice') {
           match.deliveryStatus = displayReturnStatus(match.deliveryStatus);
+          const currentStatus = match.deliveryStatus.toLowerCase();
+          if (currentStatus === 'partial delivered') match.deliveryStatus = 'Partial Delivery';
+          if (currentStatus === 'return receved') match.deliveryStatus = 'Return Received';
           const statusSelect = document.createElement('select');
           statusSelect.className = 'verification-status';
           statusSelect.setAttribute('aria-label', `Delivery status for ${match.merchantOrderId}`);
@@ -2191,7 +2390,7 @@
       try {
         const response = await apiFetch(`/api/bahok/payments?page=${page}`);
         const result = await readJsonResponse(response, 'Failed to load Bahok payments');
-        if (requestId !== pathaoRequestId) return;
+        if (requestId !== pathaoRequestId) return false;
         if (!Array.isArray(result.payments)) {
           throw new Error('Bahok returned an invalid payment list');
         }
@@ -2210,8 +2409,10 @@
         } else {
           showPaymentMessage('No Bahok payments found.');
         }
+        return true;
       } catch (error) {
         if (requestId === pathaoRequestId) showPaymentMessage(error.message, true);
+        return false;
       } finally {
         if (requestId === pathaoRequestId) {
           loadMorePaymentButton.disabled = false;
@@ -2235,7 +2436,7 @@
       try {
         const response = await apiFetch(`/api/pathao/${encodeURIComponent(merchantKey)}/invoices?page=${page}&limit=10`);
         const result = await readJsonResponse(response, 'Failed to load Pathao invoices');
-        if (requestId !== pathaoRequestId) return;
+        if (requestId !== pathaoRequestId) return false;
         const pageData = result.data;
         if (!pageData || !Array.isArray(pageData.data)) {
           throw new Error('Pathao returned an invalid invoice list');
@@ -2252,8 +2453,10 @@
         } else {
           showPaymentMessage('No Pathao invoices found.');
         }
+        return true;
       } catch (error) {
         if (requestId === pathaoRequestId) showPaymentMessage(error.message, true);
+        return false;
       } finally {
         if (requestId === pathaoRequestId) {
           loadMorePaymentButton.disabled = false;
@@ -2424,6 +2627,9 @@
     }
 
     function openPopup(mainMsg, detailMsg = '') {
+      popupDetail.style.whiteSpace = '';
+      popupDetail.style.textAlign = '';
+      popupDetail.style.fontSize = '';
       popupText.textContent = mainMsg;
       popupDetail.textContent = detailMsg;
       duplicatePopup.style.display = 'flex';
@@ -2480,6 +2686,7 @@
       document.getElementById('returnDetailsTab').classList.toggle('active', showDetails);
       document.getElementById('returnUpdateTab').setAttribute('aria-selected', String(!showDetails));
       document.getElementById('returnDetailsTab').setAttribute('aria-selected', String(showDetails));
+      if (showDetails) loadReturnsData(false);
     }
 
     async function loadReturnSheet() {
@@ -2573,6 +2780,10 @@
           }),
         });
         const result = await readJsonResponse(response, 'Failed to save return');
+        if (/already saved/i.test(String(result.message || ''))) {
+          openPopup('Already Saved !');
+          return;
+        }
         showReturnMessage(result.message || 'Return saved.');
         returnOrder = null;
         returnOrderResult.hidden = true;
@@ -2582,47 +2793,77 @@
         document.getElementById('copyReturnAmount').disabled = true;
         document.getElementById('returnOrderId').focus();
       } catch (error) {
-        showReturnMessage(error.message, true);
+        if (/already saved/i.test(String(error.message || ''))) openPopup('Already Saved !');
+        else showReturnMessage(error.message, true);
       } finally {
         button.disabled = false;
       }
     }
 
-    async function loadReturnsData(append) {
-      if (!returnSheetLoaded && !(await loadReturnSheet())) return;
-      if (!returnSheetName) return showReturnMessage('The Returns sheet is not available.', true);
-      if (!append) {
+    async function loadReturnsData(append, silent = false) {
+      if (!returnSheetLoaded && !(await loadReturnSheet())) return false;
+      if (!returnSheetName) {
+        showReturnMessage('The Returns sheet is not available.', true);
+        return false;
+      }
+      const requestId = ++returnDataRequestId;
+      const previousOffset = returnOffset;
+      const fromDate = returnDateFrom.value;
+      const toDate = returnDateTo.value;
+      if (fromDate && toDate && fromDate > toDate) {
         returnOffset = 0;
         returnVisibleVoidTotal = 0;
         returnTableRows.replaceChildren();
         document.getElementById('returnVoidTotal').textContent = '0';
+        returnTableWrap.hidden = true;
+        document.getElementById('returnStats').hidden = true;
+        loadMoreReturnsButton.hidden = true;
+        showReturnMessage('From Date must be on or before To Date.', true);
+        return false;
       }
-      const requestId = ++returnDataRequestId;
-      const date = document.getElementById('returnDateFilter').value;
+      if (!append) {
+        returnOffset = 0;
+        returnVisibleVoidTotal = 0;
+        if (!silent) {
+          returnTableRows.replaceChildren();
+          document.getElementById('returnVoidTotal').textContent = '0';
+          returnTableWrap.hidden = true;
+          document.getElementById('returnStats').hidden = true;
+          loadMoreReturnsButton.hidden = true;
+          showReturnMessage('Loading return details...');
+        }
+      }
       const params = new URLSearchParams({
         offset: String(returnOffset),
       });
-      if (date) params.set('date', date);
-      document.getElementById('loadReturnsButton').disabled = true;
+      if (fromDate) params.set('from', fromDate);
+      if (toDate) params.set('to', toDate);
       loadMoreReturnsButton.disabled = true;
       try {
         const response = await apiFetch(`/api/returns/data?${params.toString()}`);
         const result = await readJsonResponse(response, 'Failed to load return details');
-        if (requestId !== returnDataRequestId) return;
+        if (requestId !== returnDataRequestId) return false;
         if (!Array.isArray(result.rows)) throw new Error('Server returned invalid return details');
+        if (!append && silent) {
+          returnTableRows.replaceChildren();
+          returnVisibleVoidTotal = 0;
+        }
         renderReturnRows(result.rows);
         returnOffset += result.rows.length;
         returnTableWrap.hidden = false;
         document.getElementById('returnStats').hidden = false;
-        loadMoreReturnsButton.hidden = !result.hasMore || Boolean(date);
+        loadMoreReturnsButton.hidden = !result.hasMore;
+        returnMessage.hidden = true;
       } catch (error) {
+        if (silent && !append && requestId === returnDataRequestId) returnOffset = previousOffset;
         if (requestId === returnDataRequestId) showReturnMessage(error.message, true);
+        return false;
       } finally {
         if (requestId === returnDataRequestId) {
-          document.getElementById('loadReturnsButton').disabled = false;
           loadMoreReturnsButton.disabled = false;
         }
       }
+      return true;
     }
 
     function renderReturnRows(rows) {
@@ -2643,10 +2884,11 @@
           const cell = document.createElement('td');
           cell.textContent = value === undefined || value === null || value === '' ? '-' : String(value);
           if (valueIndex === 6) {
-            const status = String(value || '');
-            if (status === 'Returned' || status === 'Return Receved' || status === '# Return Receved') cell.classList.add('tone-danger');
-            else if (status === 'Delivered') cell.classList.add('tone-success');
-            else if (status === 'Partial Delivery') cell.classList.add('tone-info');
+            const status = String(value || '').trim().replace(/^#\s*/, '').toLowerCase();
+            if (status === 'return receved' || status === 'return received') cell.classList.add('return-status-plain');
+            else if (status === 'returned') cell.classList.add('tone-danger');
+            else if (status === 'delivered') cell.classList.add('tone-success');
+            else if (status === 'partial delivery') cell.classList.add('tone-info');
           }
           tableRow.appendChild(cell);
         });
@@ -3208,286 +3450,387 @@
       }
     });
 
-    function normalizeCustomerHistoryPhone(value) {
-      const digits = String(value || '').replace(/\D/g, '');
-      if (digits.startsWith('880') && digits.length === 13) return `0${digits.slice(3)}`;
-      if (digits.startsWith('88') && digits.length === 12) return `0${digits.slice(2)}`;
-      return /^01\d{9}$/.test(digits) ? digits : '';
+    function openCourierPopup(popup) {
+      popup.classList.add('open');
     }
 
-    function setCourierResultsMessage(message, isError = false) {
-      courierResultsMessage.textContent = message;
-      courierResultsMessage.className = `invoice-duplicates-message${isError ? ' error' : ''}`;
-      courierResultsMessage.hidden = !message;
-    }
-
-    function showCourierStatusDetails(order) {
-      const status = String(order.order_status || 'Courier details');
-      const holdReason = String(order.hold_reason || '').trim();
-      const riderName = String(order.rider_name || '').trim();
-      const riderPhone = String(order.rider_phone || '').trim();
-      const isHold = status.toLowerCase().includes('hold');
-      courierStatusTitle.textContent = isHold ? '🛑 Hold Reason' : '🛵 Rider Details';
-      courierStatusDetail.textContent = isHold
-        ? holdReason || 'No exact reason provided by courier.'
-        : `Name: ${riderName || 'Not Found'}\nPhone: ${riderPhone || 'N/A'}`;
-      const phone = riderPhone.replace(/[^\d+]/g, '');
-      courierRiderCallButton.hidden = isHold || !phone || phone === '+';
-      courierRiderCallButton.href = courierRiderCallButton.hidden ? '' : `tel:${phone}`;
-      courierRiderCallButton.textContent = '📞 Call Rider';
-      courierStatusPopup.style.display = 'flex';
-    }
-
-    function isBahokCourier(order) {
-      const merchant = String(order.source_merchant || '').toLowerCase();
-      return merchant.includes('bahok') || merchant.includes('sumaiya');
-    }
-
-    function createCourierResultsRow(order) {
-      const row = document.createElement('tr');
-      const addCell = (label, ...children) => {
-        const cell = document.createElement('td');
-        cell.dataset.label = label;
-        children.forEach((child) => cell.append(child));
-        row.appendChild(cell);
-        return cell;
-      };
-
-      const merchantBox = document.createElement('div');
-      if (order.send_date) {
-        const date = document.createElement('div');
-        date.className = 'courier-date';
-        const parsedDate = new Date(order.send_date);
-        date.textContent = Number.isNaN(parsedDate.getTime())
-          ? String(order.send_date)
-          : parsedDate.toLocaleDateString('en-GB', { timeZone: 'UTC', day: '2-digit', month: 'long', year: 'numeric' }).replace(/ /g, '-');
-        merchantBox.appendChild(date);
+    function closeCourierPopups() {
+      if (courierInfoPopup.classList.contains('open')) {
+        courierInfoPopup.classList.remove('open');
+        return;
       }
-      const badge = document.createElement('span');
-      badge.className = `pill ${isBahokCourier(order) ? 'tone-warning' : 'tone-success'}`;
-      badge.textContent = order.source_merchant || 'Courier';
-      merchantBox.appendChild(badge);
-      addCell('Courier', merchantBox);
-
-      addCell('Consignment ID', String(order.consignment_id || 'N/A'));
-      addCell('Merchant Order ID', String(order.merchant_order_id || 'N/A'));
-
-      const recipient = document.createElement('div');
-      recipient.className = 'courier-recipient-line';
-      const recipientName = document.createElement('strong');
-      recipientName.textContent = String(order.recipient_name || 'N/A');
-      recipient.append(recipientName, document.createTextNode(` | 📞 ${String(order.recipient_phone || 'N/A')}`));
-      addCell('Recipient', recipient);
-
-      addCell('Address', String(order.delivery_address || 'N/A'));
-      addCell('Amount', `৳${String(order.amount_to_collect ?? 0)}`).classList.add('nowrap');
-
-      const orderStatus = String(order.order_status || 'N/A');
-      const lowerStatus = orderStatus.toLowerCase();
-      const isHold = lowerStatus.includes('hold');
-      const isAssigned = lowerStatus.includes('assign') && Boolean(order.rider_name || order.rider_phone);
-      let statusContent;
-      if (isHold || isAssigned || order.hold_reason) {
-        statusContent = document.createElement('button');
-        statusContent.type = 'button';
-        statusContent.className = `courier-status-link${isHold ? ' hold' : ''}`;
-        const label = document.createElement('span');
-        label.textContent = orderStatus;
-        const hint = document.createElement('span');
-        hint.className = 'courier-click-hint';
-        hint.textContent = isHold ? '(Click for reason)' : '(Click for details)';
-        statusContent.append(label, hint);
-        statusContent.addEventListener('click', () => showCourierStatusDetails(order));
-      } else {
-        statusContent = document.createElement('strong');
-        statusContent.textContent = orderStatus;
-      }
-      addCell('Status', statusContent);
-
-      const payment = document.createElement('strong');
-      payment.textContent = String(order.payment_status || 'N/A');
-      addCell('Payment', payment);
-      return row;
+      document.querySelectorAll('.courier-popup-overlay.open')
+        .forEach((popup) => popup.classList.remove('open'));
     }
 
-    // An order ID has no spaces and contains digits; everything else is treated as a customer name.
-    function looksLikeCourierId(value) {
-      return /^[A-Za-z0-9_-]{4,64}$/.test(value) && /\d/.test(value);
+    function setCourierTrackingMessage(message, isError = false) {
+      courierTrackingMessage.textContent = message;
+      courierTrackingMessage.className = `courier-result-message${isError ? ' error' : ''}`;
+      courierTrackingMessage.hidden = false;
     }
 
-    async function fetchCourierParcels(identifier) {
-      const response = await apiFetch(`/api/track/${encodeURIComponent(identifier)}`);
-      if (response.status === 404) return { orders: [], warning: '' };
-      const result = await readJsonResponse(response, 'Courier search failed');
-      if (!Array.isArray(result.parcel_info)) throw new Error('Courier returned invalid parcel details.');
-      return { orders: result.parcel_info, warning: result.warning || '' };
+    function formatCourierDate(dateValue) {
+      if (!dateValue) return '';
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return String(dateValue);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
     }
 
-    // Customer name (or part of an order ID) -> Merchant Order IDs from the All Invoice sheet.
-    async function findInvoiceOrderIds(text) {
-      const params = new URLSearchParams({ limit: '10', search: text, offset: '0' });
-      const response = await apiFetch(`/api/invoices?${params}`);
-      const data = await readJsonResponse(response, 'Could not search All Invoice');
-      const ids = [];
-      (data.invoices || []).forEach((invoice) => {
-        const orderId = String(invoice.values && invoice.values[1] || '').trim();
-        if (orderId && !ids.includes(orderId)) ids.push(orderId);
+    function showCourierInfo(title, lines, phone = '') {
+      courierInfoTitle.textContent = title;
+      courierInfoContent.replaceChildren();
+      lines.forEach((line) => {
+        const row = document.createElement('div');
+        row.textContent = line;
+        courierInfoContent.appendChild(row);
       });
-      return ids.slice(0, 5);
+      const safePhone = String(phone).replace(/[^\d+]/g, '');
+      courierInfoCall.hidden = !safePhone || safePhone === 'N/A';
+      if (!courierInfoCall.hidden) courierInfoCall.href = `tel:${safePhone}`;
+      openCourierPopup(courierInfoPopup);
     }
 
-    async function searchCourierOrders() {
-      const identifier = invoiceSearch.value.trim();
-      courierResultsPopup.style.display = 'flex';
-      courierResultsSubtitle.textContent = identifier ? `Search: ${identifier}` : '';
-      courierResultsRows.replaceChildren();
-      courierResultsTableWrap.hidden = true;
-      if (!identifier) {
-        setCourierResultsMessage('Enter a customer name or Merchant Order ID.', true);
-        return;
-      }
-      if (normalizeCustomerHistoryPhone(identifier)) {
-        setCourierResultsMessage('For a mobile number, use the Check button.', true);
+    function appendCourierCell(row, label, value) {
+      const cell = document.createElement('td');
+      cell.dataset.label = label;
+      cell.textContent = value == null || value === '' ? 'N/A' : String(value);
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function renderCourierTrackingRows(orders) {
+      const sortedOrders = [...orders].sort((a, b) => {
+        const priority = (order) => order.order_status === 'Rider Assigned' || order.order_status === 'Assigned For Delivery';
+        return Number(priority(b)) - Number(priority(a));
+      });
+      sortedOrders.forEach((info) => {
+        const row = document.createElement('tr');
+        const merchantCell = document.createElement('td');
+        const sendDate = formatCourierDate(info.send_date);
+        if (sendDate) {
+          const date = document.createElement('div');
+          date.textContent = sendDate;
+          date.style.cssText = 'font-size:11px;color:#555;margin-bottom:3px;font-weight:bold;white-space:nowrap';
+          merchantCell.appendChild(date);
+        }
+        const badge = document.createElement('span');
+        const merchant = String(info.source_merchant || 'N/A');
+        badge.className = `courier-badge${merchant === 'Bahok Courier' || merchant === 'Sumaiya Everyday' ? ' bahok' : ' pathao'}`;
+        badge.textContent = merchant;
+        merchantCell.appendChild(badge);
+        merchantCell.dataset.label = 'Merchant';
+        row.appendChild(merchantCell);
+
+        appendCourierCell(row, 'Consignment ID', info.consignment_id);
+        appendCourierCell(row, 'Order ID', info.merchant_order_id);
+        const recipientCell = document.createElement('td');
+        recipientCell.dataset.label = 'Recipient Info';
+        recipientCell.textContent = `${info.recipient_name || 'N/A'} | Phone: ${info.recipient_phone || 'N/A'}`;
+        row.appendChild(recipientCell);
+        appendCourierCell(row, 'Address', info.delivery_address);
+        appendCourierCell(row, 'Amount', `৳${info.amount_to_collect || '0'}`);
+
+        const statusCell = document.createElement('td');
+        statusCell.dataset.label = 'Order Status';
+        const orderStatus = String(info.order_status || 'N/A');
+        const statusLower = orderStatus.toLowerCase();
+        if (orderStatus === 'Assigned For Delivery' || orderStatus === 'Rider Assigned') {
+          const statusButton = document.createElement('button');
+          statusButton.type = 'button';
+          statusButton.className = 'courier-status-link';
+          statusButton.textContent = orderStatus;
+          const hint = document.createElement('span');
+          hint.className = 'courier-status-hint';
+          hint.textContent = '(Click for details)';
+          statusButton.appendChild(hint);
+          statusButton.addEventListener('click', () => showCourierInfo('Rider Details', [
+            `Name: ${info.rider_name || 'Not Found'}`,
+            `Phone: ${info.rider_phone || 'N/A'}`
+          ], info.rider_phone));
+          statusCell.appendChild(statusButton);
+        } else if (statusLower.includes('hold')) {
+          const statusButton = document.createElement('button');
+          statusButton.type = 'button';
+          statusButton.className = 'courier-status-link';
+          statusButton.style.color = 'var(--danger)';
+          statusButton.textContent = orderStatus;
+          const hint = document.createElement('span');
+          hint.className = 'courier-status-hint';
+          hint.style.color = 'var(--danger)';
+          hint.textContent = '(Click for reason)';
+          statusButton.appendChild(hint);
+          statusButton.addEventListener('click', () => showCourierInfo('Hold Reason', [
+            info.hold_reason || 'No exact reason provided by courier.'
+          ]));
+          statusCell.appendChild(statusButton);
+        } else {
+          const status = document.createElement('strong');
+          status.textContent = orderStatus;
+          statusCell.appendChild(status);
+        }
+        row.appendChild(statusCell);
+        const paymentCell = document.createElement('td');
+        paymentCell.dataset.label = 'Payment';
+        const paymentStatus = document.createElement('strong');
+        paymentStatus.textContent = info.payment_status || 'N/A';
+        paymentCell.appendChild(paymentStatus);
+        row.appendChild(paymentCell);
+        courierTrackingRows.appendChild(row);
+      });
+    }
+
+    function normalizeCourierOrderId(value) {
+      return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    async function requestCourierTracking(searchValue) {
+      const response = await fetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(searchValue)}`);
+      if (response.status === 404) return null;
+      const data = await readJsonResponse(response, 'Courier tracking failed');
+      if (data.status !== 'success') return null;
+      if (!Array.isArray(data.parcel_info)) throw new Error('Courier returned invalid tracking details.');
+      return data.parcel_info.length ? data : null;
+    }
+
+    async function findInvoiceByMerchantOrderId(orderId) {
+      const params = new URLSearchParams({ limit: '50', search: orderId });
+      const response = await apiFetch(`/api/invoices?${params}`);
+      const data = await readJsonResponse(response, 'Failed to look up this Merchant Order ID in All Invoice');
+      if (!Array.isArray(data.invoices)) throw new Error('Invoice search returned invalid results.');
+      const normalizedOrderId = normalizeCourierOrderId(orderId);
+      return data.invoices.find((invoice) => (
+        Array.isArray(invoice.values)
+        && normalizeCourierOrderId(invoice.values[1]) === normalizedOrderId
+      )) || null;
+    }
+
+    async function trackCourierParcel() {
+      const idInput = invoiceSearch.value.trim();
+      openCourierPopup(courierTrackingPopup);
+      courierTrackingSubtitle.textContent = idInput ? `Search: ${idInput}` : '';
+      courierTrackingRows.replaceChildren();
+      courierTrackingTableWrap.hidden = true;
+      if (!idInput) {
+        setCourierTrackingMessage('Please enter a valid Tracking ID or Mobile Number.', true);
         return;
       }
 
-      setCourierResultsMessage('Searching Pathao and Bahok...');
-      courierSearchButton.disabled = true;
+      courierTrackButton.disabled = true;
+      courierTrackButton.textContent = 'Searching...';
+      setCourierTrackingMessage('Searching across all merchants...');
       try {
-        let orders = [];
-        const warnings = new Set();
-        let searchedIds = 0;
-        let triedDirect = false;
-        if (looksLikeCourierId(identifier)) {
-          triedDirect = true;
-          const direct = await fetchCourierParcels(identifier);
-          orders = direct.orders;
-          if (direct.warning) warnings.add(direct.warning);
-        }
-        if (!orders.length) {
-          if (triedDirect) setCourierResultsMessage('Looking up the order in All Invoice...');
-          const orderIds = (await findInvoiceOrderIds(identifier)).filter((id) => id !== identifier);
-          searchedIds = orderIds.length;
-          for (let index = 0; index < orderIds.length; index++) {
-            setCourierResultsMessage(`Searching Pathao and Bahok... (${index + 1}/${orderIds.length})`);
-            try {
-              const found = await fetchCourierParcels(orderIds[index]);
-              orders.push(...found.orders);
-              if (found.warning) warnings.add(found.warning);
-            } catch (error) {
-              warnings.add(`Order ${orderIds[index]}: ${error.message || 'courier search failed'}`);
-            }
+        let data = await requestCourierTracking(idInput);
+        if (!data) {
+          const phoneInput = idInput.replace(/^\+?88/, '');
+          if (/^01\d{9}$/.test(phoneInput)) {
+            setCourierTrackingMessage('No parcel details found for this mobile number.', true);
+            return;
           }
-        }
 
-        const unique = Array.from(new Map(
-          orders.map((order) => [`${order.source_merchant}-${order.consignment_id}`, order])
-        ).values());
-        if (!unique.length) {
-          const reason = !triedDirect && !searchedIds
-            ? 'No invoice found with this name.'
-            : 'No parcel found for this search.';
-          setCourierResultsMessage([reason, ...warnings].join(' '), true);
+          setCourierTrackingMessage('Looking up the Merchant Order ID in All Invoice...');
+          const invoice = await findInvoiceByMerchantOrderId(idInput);
+          if (!invoice) {
+            setCourierTrackingMessage('Merchant Order ID was not found in All Invoice or courier tracking.', true);
+            return;
+          }
+          const invoicePhone = String(invoice.values[3] || '').trim();
+          if (!invoicePhone) {
+            setCourierTrackingMessage('This invoice has no recipient mobile number to search courier records.', true);
+            return;
+          }
+
+          setCourierTrackingMessage('Searching courier records by the invoice mobile number...');
+          const phoneData = await requestCourierTracking(invoicePhone);
+          if (!phoneData) {
+            setCourierTrackingMessage('No courier records found for this invoice mobile number.', true);
+            return;
+          }
+          const requestedOrderId = normalizeCourierOrderId(idInput);
+          const matchingParcels = phoneData.parcel_info.filter((parcel) => (
+            normalizeCourierOrderId(parcel.merchant_order_id) === requestedOrderId
+          ));
+          if (!matchingParcels.length) {
+            setCourierTrackingMessage('Invoice found, but courier records do not contain this Merchant Order ID.', true);
+            return;
+          }
+          data = { ...phoneData, parcel_info: matchingParcels };
+        }
+        if (!data.parcel_info.length) {
+          setCourierTrackingMessage('No parcel details found.', true);
           return;
         }
-        const isPriority = (order) => ['Rider Assigned', 'Assigned For Delivery'].includes(order.order_status);
-        unique.sort((left, right) => Number(isPriority(right)) - Number(isPriority(left)));
-        unique.forEach((order) => courierResultsRows.appendChild(createCourierResultsRow(order)));
-        courierResultsTableWrap.hidden = false;
-        setCourierResultsMessage([`${unique.length} parcel(s) found.`, ...warnings].join(' '));
+        renderCourierTrackingRows(data.parcel_info);
+        courierTrackingMessage.hidden = true;
+        courierTrackingTableWrap.hidden = false;
       } catch (error) {
-        setCourierResultsMessage(error.message || 'Courier search failed.', true);
+        setCourierTrackingMessage(error.message || 'Connection error. Please try again.', true);
       } finally {
-        courierSearchButton.disabled = false;
+        courierTrackButton.disabled = false;
+        courierTrackButton.textContent = 'Courier';
       }
     }
 
-    function createCustomerHistoryCard(courier, history, metrics) {
+    function createCourierHistoryError(title, message) {
       const card = document.createElement('section');
-      card.className = `courier-history-card${courier === 'Bahok' ? ' bahok' : ''}`;
-      const title = document.createElement('h3');
-      title.textContent = courier;
-      card.appendChild(title);
-      if (!history || history.status !== 'success') {
-        const message = document.createElement('p');
-        message.className = 'courier-history-error';
-        message.textContent = history && history.message || 'History is unavailable.';
-        card.appendChild(message);
+      card.className = 'courier-history-card';
+      const heading = document.createElement('h3');
+      heading.textContent = title;
+      const error = document.createElement('p');
+      error.className = 'courier-history-error';
+      error.textContent = message;
+      card.append(heading, error);
+      return card;
+    }
+
+    function createCourierHistoryCard(name, data, metricNames, isBahok = false) {
+      const card = document.createElement('section');
+      card.className = `courier-history-card${isBahok ? ' bahok' : ''}`;
+      const heading = document.createElement('h3');
+      heading.textContent = name;
+      card.appendChild(heading);
+      if (!data || data.status !== 'success') {
+        const error = document.createElement('p');
+        error.className = 'courier-history-error';
+        error.textContent = data && data.message ? data.message : 'History is unavailable.';
+        card.appendChild(error);
         return card;
       }
-      if (history.new_customer) {
-        const pill = document.createElement('span');
-        pill.className = 'courier-new-customer';
-        pill.textContent = 'New Customer';
-        card.appendChild(pill);
+      if (data.new_customer) {
+        const label = document.createElement('span');
+        label.className = 'courier-new-customer';
+        label.textContent = 'New Customer';
+        card.appendChild(label);
         return card;
       }
 
-      const metricGrid = document.createElement('div');
-      metricGrid.className = 'courier-history-metrics';
-      metrics.forEach(([label, value]) => {
+      const metrics = document.createElement('div');
+      metrics.className = 'courier-history-metrics';
+      metricNames.forEach(([label, key, suffix]) => {
         const metric = document.createElement('div');
         metric.className = 'courier-history-metric';
-        const metricLabel = document.createElement('span');
-        metricLabel.textContent = label;
-        const metricValue = document.createElement('strong');
-        metricValue.textContent = String(value ?? 0);
-        metric.append(metricLabel, metricValue);
-        metricGrid.appendChild(metric);
+        const name = document.createElement('span');
+        name.textContent = label;
+        const value = document.createElement('strong');
+        value.textContent = `${Number(data[key]) || 0}${suffix || ''}`;
+        metric.append(name, value);
+        metrics.appendChild(metric);
       });
-      card.appendChild(metricGrid);
-      if (courier === 'Pathao') {
-        const rating = document.createElement('p');
-        rating.style.marginTop = '14px';
-        const ratingLabel = document.createElement('strong');
-        ratingLabel.textContent = 'Customer Rating: ';
-        const ratingText = String(history.rating || 'Not available').replace(/_/g, ' ')
+      card.appendChild(metrics);
+      if (!isBahok) {
+        const rating = String(data.rating || 'Not available').replace(/_/g, ' ')
           .replace(/\b\w/g, (character) => character.toUpperCase());
-        rating.append(ratingLabel, document.createTextNode(ratingText));
-        card.appendChild(rating);
+        const ratingText = document.createElement('p');
+        ratingText.className = 'courier-history-rating';
+        const label = document.createElement('strong');
+        label.textContent = 'Customer Rating: ';
+        ratingText.append(label, document.createTextNode(rating));
+        card.appendChild(ratingText);
       }
       return card;
     }
 
-    async function checkCustomerCourierHistory() {
-      const input = invoiceSearch.value.trim();
-      const phone = normalizeCustomerHistoryPhone(input);
-      customerHistoryPopup.style.display = 'flex';
-      customerHistoryPhone.textContent = phone || input || '—';
-      customerHistoryCards.replaceChildren();
-      customerHistoryMessage.textContent = '';
-      customerHistoryMessage.className = 'invoice-duplicates-message';
-      if (!phone) {
-        customerHistoryCards.appendChild(createCustomerHistoryCard('Check the mobile number', {
-          status: 'error',
-          message: 'Enter a valid Bangladesh mobile number.',
-        }, []));
+    async function checkCourierCustomerHistory() {
+      const phoneInput = invoiceSearch.value.trim();
+      const phone = phoneInput.replace(/^\+?88/, '');
+      openCourierPopup(courierHistoryPopup);
+      courierHistoryPhone.textContent = phone || '—';
+      courierHistoryCards.replaceChildren();
+      if (!/^01\d{9}$/.test(phone)) {
+        courierHistoryCards.appendChild(createCourierHistoryError(
+          'Check the mobile number',
+          'Enter a valid Bangladesh mobile number to check courier history.'
+        ));
         return;
       }
 
-      customerHistoryMessage.textContent = 'Loading Pathao and Bahok history...';
-      customerHistoryButton.disabled = true;
+      courierHistoryCards.innerHTML = '<div class="courier-history-loading">Loading courier history…</div>';
+      courierHistoryButton.disabled = true;
+      courierHistoryButton.textContent = 'Checking...';
       try {
-        const response = await apiFetch(`/api/customer-history/${encodeURIComponent(phone)}`);
-        const result = await readJsonResponse(response, 'Could not load customer courier history');
-        customerHistoryCards.append(
-          createCustomerHistoryCard('Pathao', result.pathao, [
-            ['Processed', result.pathao && result.pathao.processed],
-            ['Delivered', result.pathao && result.pathao.delivered],
-            ['Returned', result.pathao && result.pathao.returned],
+        const response = await fetch(`${COURIER_API_BASE_URL}/api/customer-history/${encodeURIComponent(phone)}`);
+        const data = await readJsonResponse(response, 'Courier history could not be loaded');
+        if (data.status !== 'success') throw new Error(data.message || 'Courier history could not be loaded.');
+        courierHistoryCards.replaceChildren(
+          createCourierHistoryCard('Pathao', data.pathao, [
+            ['Processed', 'processed'],
+            ['Delivered', 'delivered'],
+            ['Returned', 'returned']
           ]),
-          createCustomerHistoryCard('Bahok', result.bahok, [
-            ['Cancel', result.bahok && result.bahok.canceled],
-            ['Delivered', result.bahok && result.bahok.delivered],
-            ['Success Rate', `${Number(result.bahok && result.bahok.success_rate) || 0}%`],
-          ])
+          createCourierHistoryCard('Bahok', data.bahok, [
+            ['Cancel', 'canceled'],
+            ['Delivered', 'delivered'],
+            ['Success Rate', 'success_rate', '%']
+          ], true)
         );
-        customerHistoryMessage.textContent = '';
       } catch (error) {
-        customerHistoryMessage.textContent = error.message || 'Could not load customer courier history.';
-        customerHistoryMessage.className = 'invoice-duplicates-message error';
+        courierHistoryCards.replaceChildren(createCourierHistoryError(
+          'History unavailable',
+          error.message || 'Connection error. Please try again.'
+        ));
       } finally {
-        customerHistoryButton.disabled = false;
+        courierHistoryButton.disabled = false;
+        courierHistoryButton.textContent = 'Check';
+      }
+    }
+
+    function requestDuplicateInvoiceDelete(duplicate, button) {
+      if (!Number.isInteger(Number(duplicate.rowNumber)) || Number(duplicate.rowNumber) < 2) {
+        invoiceDuplicatesMessage.className = 'invoice-duplicates-message error';
+        invoiceDuplicatesMessage.textContent = 'This duplicate is missing its sheet row number. Run Duplicate Check again.';
+        return;
+      }
+      pendingDuplicateDelete = { duplicate, button };
+      duplicateDeletePrompt.textContent = `Delete the entire sheet row for order ${duplicate.orderId}? This cannot be undone.`;
+      duplicateDeleteMessage.hidden = true;
+      duplicateDeleteMessage.textContent = '';
+      confirmDuplicateDelete.disabled = false;
+      cancelDuplicateDelete.disabled = false;
+      duplicateDeleteConfirmPopup.style.display = 'flex';
+    }
+
+    function closeDuplicateDeleteConfirm() {
+      if (confirmDuplicateDelete.disabled) return;
+      duplicateDeleteConfirmPopup.style.display = 'none';
+      pendingDuplicateDelete = null;
+    }
+
+    async function deleteDuplicateInvoiceRow() {
+      if (!pendingDuplicateDelete) return;
+      const { duplicate, button } = pendingDuplicateDelete;
+      button.disabled = true;
+      confirmDuplicateDelete.disabled = true;
+      cancelDuplicateDelete.disabled = true;
+      duplicateDeleteMessage.hidden = false;
+      duplicateDeleteMessage.style.color = 'var(--muted)';
+      duplicateDeleteMessage.textContent = 'Deleting the sheet row...';
+      try {
+        const response = await apiFetch(`/api/invoices/${encodeURIComponent(duplicate.rowNumber)}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: duplicate.date,
+            orderId: duplicate.orderId,
+            phone: duplicate.phone,
+            amount: duplicate.amount,
+            product: duplicate.product,
+          }),
+        });
+        const result = await readJsonResponse(response, 'Failed to delete the invoice row');
+        if (result.success !== true) throw new Error('Server did not confirm the sheet row deletion.');
+        duplicateDeleteConfirmPopup.style.display = 'none';
+        pendingDuplicateDelete = null;
+        invoiceDuplicatesMessage.className = 'invoice-duplicates-message';
+        invoiceDuplicatesMessage.textContent = `Deleted the full sheet row for order ${result.orderId}. Refreshing duplicate results...`;
+        await refreshInvoicesForRealtimeSync();
+        await checkInvoiceDuplicates();
+      } catch (error) {
+        duplicateDeleteMessage.style.color = 'var(--danger)';
+        duplicateDeleteMessage.textContent = error.message || 'Failed to delete the invoice row.';
+        confirmDuplicateDelete.disabled = false;
+        cancelDuplicateDelete.disabled = false;
+      } finally {
+        button.disabled = false;
       }
     }
 
@@ -3519,7 +3862,11 @@
           nameCell.textContent = duplicate.name || '-';
           const phoneCell = document.createElement('td');
           phoneCell.textContent = duplicate.phone || '-';
-          row.append(dateCell, orderCell, nameCell, phoneCell);
+          const actionCell = document.createElement('td');
+          const deleteButton = createIconButton('Delete full sheet row', 'clear', 'duplicate-delete-btn');
+          deleteButton.addEventListener('click', () => requestDuplicateInvoiceDelete(duplicate, deleteButton));
+          actionCell.appendChild(deleteButton);
+          row.append(dateCell, orderCell, nameCell, phoneCell, actionCell);
           invoiceDuplicatesRows.appendChild(row);
         });
         invoiceDuplicatesMessage.textContent = `${result.duplicates.length} duplicate invoice row(s) found.`;
@@ -3603,6 +3950,107 @@
       }
     }
 
+    async function refreshInvoicesForRealtimeSync() {
+      const loadedRows = invoiceRows.children.length;
+      await loadInvoices(true);
+      while (invoiceRows.children.length < loadedRows && hasMoreInvoices && !isLoadingInvoices) {
+        await loadInvoices();
+      }
+    }
+
+    async function refreshReturnsForRealtimeSync() {
+      const loadedPages = Math.max(1, Math.ceil(returnOffset / 50));
+      for (let page = 0; page < loadedPages; page += 1) {
+        if (page > 0 && loadMoreReturnsButton.hidden) break;
+        if (!(await loadReturnsData(page > 0, page === 0))) break;
+      }
+    }
+
+    async function refreshProviderPaymentsForRealtimeSync() {
+      const loadedPages = Math.max(1, activePaymentProvider === 'pathao' ? pathaoCurrentPage : bahokCurrentPage);
+      for (let page = 0; page < loadedPages; page += 1) {
+        if (page > 0 && paymentPagination.hidden) break;
+        const refreshed = activePaymentProvider === 'pathao'
+          ? await loadPathaoInvoices(page > 0)
+          : await loadBahokPayments(page > 0);
+        if (!refreshed) break;
+      }
+    }
+
+    function hasOpenRealtimeBlockingOverlay() {
+      return [...document.querySelectorAll('.popup-overlay, .details-overlay, .courier-popup-overlay')]
+        .some((overlay) => window.getComputedStyle(overlay).display !== 'none');
+    }
+
+    async function refreshActiveSheetView() {
+      if (!fullAccessUnlocked || document.hidden || realtimeSyncRunning) return;
+      if (Date.now() - lastRealtimeSyncAt < 5000) return;
+      if (hasOpenRealtimeBlockingOverlay()) return;
+      if (document.querySelector('.cell-popover:not([hidden])')) return;
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.matches('input, textarea, select')) return;
+
+      const activePanel = document.querySelector('.page-panel.active');
+      if (!activePanel) return;
+
+      realtimeSyncRunning = true;
+      lastRealtimeSyncAt = Date.now();
+      try {
+        if (activePanel.id === 'dashboard') {
+          if (!document.getElementById('refreshDashboardBtn').disabled) await loadDashboard();
+        } else if (activePanel.id === 'all-invoice') {
+          if (!isLoadingInvoices && !refreshInvoicesBtn.disabled) {
+            await refreshInvoicesForRealtimeSync();
+          }
+        } else if (activePanel.id === 'return') {
+          if (!returnDetailsSection.hidden) {
+            if (!loadMoreReturnsButton.disabled) await refreshReturnsForRealtimeSync();
+          } else if (
+            returnOrder
+            && !returnOrderResult.hidden
+            && !returnSearchButton.disabled
+            && !document.getElementById('returnVoidAmount').value
+            && document.getElementById('returnNewStatus').value === 'Return Receved'
+          ) {
+            await searchReturnOrder();
+          }
+        } else if (activePanel.id === 'payment') {
+          if (activePaymentProvider === 'summary' && paymentSummaryMessage.textContent !== 'Loading payment summary...') {
+            await loadPaymentSummary();
+          } else if (
+            activePaymentProvider === 'delivery-charge'
+            && paymentChargeMessage.textContent !== 'Loading delivery charges...'
+          ) {
+            await loadPaymentDeliveryCharge();
+          } else if (
+            activePaymentProvider === 'change-status'
+            && changeStatusInvoice
+            && !changeStatusSearchButton.disabled
+            && !changeStatusSelect.value
+          ) {
+            await searchInvoiceForStatus();
+          } else if (
+            (activePaymentProvider === 'pathao' || activePaymentProvider === 'bahok')
+            && !paymentSearch.value.trim()
+            && !paymentSearchButton.disabled
+            && !loadMorePaymentButton.disabled
+            && Date.now() - lastProviderRealtimeSyncAt >= PROVIDER_REALTIME_SYNC_INTERVAL_MS
+          ) {
+            lastProviderRealtimeSyncAt = Date.now();
+            await refreshProviderPaymentsForRealtimeSync();
+          }
+        }
+      } finally {
+        realtimeSyncRunning = false;
+      }
+    }
+
+    window.setInterval(refreshActiveSheetView, REALTIME_SYNC_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshActiveSheetView();
+    });
+    window.addEventListener('focus', refreshActiveSheetView);
+
     window.addEventListener('scroll', () => {
       document.querySelectorAll('.cell-popover:not([hidden])')
         .forEach((panel) => { panel.hidden = true; });
@@ -3614,6 +4062,21 @@
     }, { passive: true });
     refreshInvoicesBtn.addEventListener('click', () => loadInvoices(true));
     checkInvoiceDuplicatesBtn.addEventListener('click', checkInvoiceDuplicates);
+    courierTrackButton.addEventListener('click', trackCourierParcel);
+    courierHistoryButton.addEventListener('click', checkCourierCustomerHistory);
+    document.querySelectorAll('[data-close-courier-popup]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.getElementById(button.dataset.closeCourierPopup).classList.remove('open');
+      });
+    });
+    [courierTrackingPopup, courierHistoryPopup, courierInfoPopup].forEach((popup) => {
+      popup.addEventListener('click', (event) => {
+        if (event.target === popup) popup.classList.remove('open');
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeCourierPopups();
+    });
     ['closeInvoiceDuplicates', 'closeInvoiceDuplicatesButton'].forEach((id) => {
       document.getElementById(id).addEventListener('click', () => {
         invoiceDuplicatesPopup.style.display = 'none';
@@ -3622,25 +4085,15 @@
     invoiceDuplicatesPopup.addEventListener('click', (event) => {
       if (event.target === invoiceDuplicatesPopup) invoiceDuplicatesPopup.style.display = 'none';
     });
-    courierSearchButton.addEventListener('click', searchCourierOrders);
-    customerHistoryButton.addEventListener('click', checkCustomerCourierHistory);
-    ['closeCourierResults', 'closeCourierResultsButton'].forEach((id) => {
-      document.getElementById(id).addEventListener('click', () => {
-        courierResultsPopup.style.display = 'none';
-      });
+    cancelDuplicateDelete.addEventListener('click', closeDuplicateDeleteConfirm);
+    confirmDuplicateDelete.addEventListener('click', deleteDuplicateInvoiceRow);
+    duplicateDeleteConfirmPopup.addEventListener('click', (event) => {
+      if (event.target === duplicateDeleteConfirmPopup) closeDuplicateDeleteConfirm();
     });
-    ['closeCustomerHistory', 'closeCustomerHistoryButton'].forEach((id) => {
-      document.getElementById(id).addEventListener('click', () => {
-        customerHistoryPopup.style.display = 'none';
-      });
-    });
-    document.getElementById('closeCourierStatusButton').addEventListener('click', () => {
-      courierStatusPopup.style.display = 'none';
-    });
-    [courierResultsPopup, customerHistoryPopup, courierStatusPopup].forEach((popup) => {
-      popup.addEventListener('click', (event) => {
-        if (event.target === popup) popup.style.display = 'none';
-      });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && duplicateDeleteConfirmPopup.style.display === 'flex') {
+        closeDuplicateDeleteConfirm();
+      }
     });
     invoiceSearchForm.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -3773,7 +4226,15 @@
         hideStatus();
         resetUploaderOnPopupClose = true;
         if (data.hasDuplicate) {
-          openPopup(data.popupMessage || 'already Save !', data.message);
+          const lines = [data.message,
+            `Already in sheet: ${data.duplicateInSheetCount || 0} | Repeated inside Excel file: ${data.duplicateInFileCount || 0}`];
+          (data.duplicateDetails || []).slice(0, 5).forEach((item) => {
+            lines.push(`${item.orderId} — ${item.reason} [${item.sheet}, row ${item.row}${item.firstSeen ? `, first: ${item.firstSeen}` : ''}]`);
+          });
+          openPopup(data.popupMessage || 'Duplicate rows skipped', lines.join('\n'));
+          popupDetail.style.whiteSpace = 'pre-line';
+          popupDetail.style.textAlign = 'left';
+          popupDetail.style.fontSize = '12px';
         } else {
           openPopup(data.message);
         }
