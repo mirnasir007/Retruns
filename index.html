@@ -2109,6 +2109,18 @@
         counts.set(match.deliveryStatus, (counts.get(match.deliveryStatus) || 0) + 1);
       });
       counts.forEach((count, status) => addSummaryChip(`Set to ${status || 'blank'}`, count, statusTone(status)));
+      if (verification.provider === 'bahok') {
+        const returnAmount = verification.matches.reduce((sum, match) => {
+          if (match.deliveryStatus !== 'Returned') return sum;
+          const amount = Number(cleanAmount(match.amount));
+          return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        addSummaryChip(
+          'Return Amount',
+          new Intl.NumberFormat('en-BD', { maximumFractionDigits: 2 }).format(returnAmount),
+          returnAmount ? 'danger' : undefined
+        );
+      }
       paymentDetailsSummary.hidden = false;
     }
 
