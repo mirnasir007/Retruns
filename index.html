@@ -392,6 +392,33 @@
     .invoice-table td { position: relative; color: var(--text-2); }
     .invoice-table tbody tr:hover td { background: #f8faff; }
     .invoice-table tr:last-child td { border-bottom: 0; }
+    #all-invoice .invoice-table { table-layout: fixed; }
+    #all-invoice .invoice-table th,
+    #all-invoice .invoice-table td { overflow: hidden; text-overflow: ellipsis; }
+    #all-invoice .invoice-table th {
+      padding: 8px 6px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.2;
+      letter-spacing: .2px;
+    }
+    #all-invoice .invoice-table td { padding: 4px 6px; }
+    #all-invoice .invoice-table th:nth-child(1), #all-invoice .invoice-table td:nth-child(1) { width: 8%; }
+    #all-invoice .invoice-table th:nth-child(2), #all-invoice .invoice-table td:nth-child(2) { width: 12%; }
+    #all-invoice .invoice-table th:nth-child(3), #all-invoice .invoice-table td:nth-child(3) { width: 15%; }
+    #all-invoice .invoice-table th:nth-child(4), #all-invoice .invoice-table td:nth-child(4) { width: 14%; }
+    #all-invoice .invoice-table th:nth-child(5), #all-invoice .invoice-table td:nth-child(5) { width: 13%; }
+    #all-invoice .invoice-table th:nth-child(6), #all-invoice .invoice-table td:nth-child(6) { width: 8%; }
+    #all-invoice .invoice-table th:nth-child(7), #all-invoice .invoice-table td:nth-child(7) { width: 8%; }
+    #all-invoice .invoice-table th:nth-child(8), #all-invoice .invoice-table td:nth-child(8) { width: 10%; }
+    #all-invoice .invoice-table th:nth-child(9), #all-invoice .invoice-table td:nth-child(9) { width: 12%; }
+    .invoice-order-cell { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
+    .invoice-order-main { display: inline-flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; min-width: 0; }
+    .invoice-order-id { overflow: hidden; text-overflow: ellipsis; }
+    .invoice-order-courier { color: var(--muted); font-size: 10px; font-weight: 600; line-height: 12px; }
+    @media (max-width: 700px) {
+      #all-invoice .invoice-table { table-layout: auto; min-width: 900px; }
+    }
 
     /* ---------- Pills / tones ---------- */
     .tone-success { background: var(--success-soft) !important; color: var(--success) !important; border-color: #bbf7d0 !important; }
@@ -1233,7 +1260,6 @@
       { title: 'Recipient Phone(*)', index: 3 },
       { title: 'Amount', index: 5 },
       { title: 'Quantity', index: 6, product: true },
-      { title: 'Courier', index: 9 },
       { title: 'Payment Date', index: 11 },
       { title: 'Payment Id', index: 12 }
     ];
@@ -3319,19 +3345,32 @@
           td.appendChild(createInvoiceStatusDisplay(row.values[0]));
         } else if (column.note) {
           const content = document.createElement('span');
-          content.className = 'invoice-cell-content';
+          content.className = 'invoice-order-cell';
+          const main = document.createElement('span');
+          main.className = 'invoice-order-main';
           const orderId = document.createElement('span');
+          orderId.className = 'invoice-order-id';
           orderId.textContent = row.values[column.index] || '';
-          content.appendChild(orderId);
+          orderId.title = orderId.textContent;
+          main.appendChild(orderId);
           const noteCell = document.createElement('span');
           renderNoteCell(noteCell, row);
-          content.appendChild(noteCell);
+          main.appendChild(noteCell);
+          content.appendChild(main);
+          const courier = String(row.values[9] || '').trim();
+          if (courier) {
+            const courierLabel = document.createElement('span');
+            courierLabel.className = 'invoice-order-courier';
+            courierLabel.textContent = courier;
+            content.appendChild(courierLabel);
+          }
           td.appendChild(content);
         } else if (column.address) {
           const content = document.createElement('span');
           content.className = 'invoice-cell-content';
           const name = document.createElement('span');
           name.textContent = row.values[column.index] || '';
+          name.title = name.textContent;
           const button = createIconButton('View recipient address', 'eye');
           const popover = makePopover();
           popover.textContent = row.values[4] || '';
@@ -3346,6 +3385,7 @@
           content.className = 'invoice-cell-content';
           const quantity = document.createElement('span');
           quantity.textContent = row.values[column.index] || '';
+          quantity.title = quantity.textContent;
           const button = createIconButton('View product name', 'eye');
           const popover = makePopover();
           popover.textContent = row.values[7] || '';
@@ -3358,6 +3398,7 @@
         } else {
           const value = row.values[column.index];
           td.textContent = value === undefined ? '' : value;
+          td.title = td.textContent;
         }
         tr.appendChild(td);
       });
@@ -3367,7 +3408,8 @@
     function updateFixedScrollbar() {
       const wrapperWidth = tableWrap.clientWidth;
       const isInvoicePage = document.getElementById('all-invoice').classList.contains('active');
-      fixedHorizontalScrollbar.classList.toggle('active', isInvoicePage);
+      const hasHorizontalOverflow = invoiceTable.scrollWidth > wrapperWidth + 1;
+      fixedHorizontalScrollbar.classList.toggle('active', isInvoicePage && hasHorizontalOverflow);
       const scrollbarWidth = fixedHorizontalScrollbar.clientWidth;
       const spacerWidth = invoiceTable.scrollWidth + Math.max(0, scrollbarWidth - wrapperWidth);
       horizontalScrollbarSpacer.style.width = `${spacerWidth}px`;
