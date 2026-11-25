@@ -855,7 +855,6 @@
             </label>
             <button type="button" class="refresh-btn" id="paymentSummaryAllButton">All Data</button>
             <button type="button" class="download-btn" id="paymentSummaryDownloadButton">Download Excel</button>
-            <span class="payment-summary-scope" id="paymentSummaryScope">Showing: All data</span>
           </div>
           <div class="payment-summary-grid">
             <article class="payment-summary-card">
@@ -1156,7 +1155,6 @@
     const paymentSummaryMonth = document.getElementById('paymentSummaryMonth');
     const paymentSummaryAllButton = document.getElementById('paymentSummaryAllButton');
     const paymentSummaryDownloadButton = document.getElementById('paymentSummaryDownloadButton');
-    const paymentSummaryScope = document.getElementById('paymentSummaryScope');
     const bahokEntryPopup = document.getElementById('bahokEntryPopup');
     const bahokEntryDate = document.getElementById('bahokEntryDate');
     const bahokEntryRows = document.getElementById('bahokEntryRows');
@@ -1726,14 +1724,6 @@
       return params;
     }
 
-    function describePaymentSummaryScope() {
-      const [year, month] = paymentSummaryMonth.value.split('-');
-      if (!year || !month) return 'Showing: All data';
-      const name = new Date(Number(year), Number(month) - 1, 1)
-        .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-      return `Showing: ${name}`;
-    }
-
     async function loadPaymentSummary(silent = false) {
       const requestId = ++paymentSummaryRequestId;
       if (!silent) {
@@ -1751,7 +1741,6 @@
         lastPaymentSummarySignature = signature;
         renderPaymentSummaryMetrics(pathaoSummaryMetrics, summary.pathao, false, ['Total Return Amount']);
         renderPaymentSummaryMetrics(bahokSummaryMetrics, summary.bahok, true);
-        paymentSummaryScope.textContent = describePaymentSummaryScope();
         paymentSummaryMessage.hidden = true;
       } catch (error) {
         if (silent || requestId !== paymentSummaryRequestId) return;
