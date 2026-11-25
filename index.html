@@ -460,6 +460,14 @@
     .payment-charge-card.total { border-color: #c7d2fe; background: var(--primary-soft); }
     .payment-charge-card.total strong { color: var(--primary-dark); }
     .payment-charge-message { min-height: 58px; }
+    .payment-summary-controls { flex-wrap: wrap; }
+    .payment-summary-scope { align-self: center; color: var(--muted); font-size: 12px; font-weight: 650; }
+    .live-sync-pill { position: fixed; right: 14px; bottom: 12px; z-index: 40; display: none; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--muted); font-size: 11.5px; font-weight: 650; box-shadow: var(--shadow-sm); pointer-events: none; }
+    .live-sync-pill.show { display: inline-flex; }
+    .live-sync-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; }
+    .return-copy-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .return-copy-btn svg { width: 14px; height: 14px; }
+    .return-copy-cell { width: 48px; text-align: center; }
     .fixed-horizontal-scrollbar {
       position: fixed; z-index: 30; right: 0; bottom: 0; left: var(--sidebar-width);
       height: 18px; overflow-x: auto; overflow-y: hidden; background: #e2e8f0; display: none;
@@ -778,6 +786,10 @@
               <span>To Date</span>
               <input type="date" id="returnDateTo" class="return-date-filter" />
             </label>
+            <button type="button" class="refresh-btn return-copy-btn" id="copyReturnDetailsButton" title="Copy Name-Number-Note for every return in this list">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+              <span>Copy All</span>
+            </button>
           </div>
           <div class="return-card" id="returnStats" hidden>
             <strong>Visible Void Total: </strong><span id="returnVoidTotal">0</span>
@@ -795,6 +807,7 @@
                   <th>Status</th>
                   <th>Void Amount</th>
                   <th aria-label="Remark"></th>
+                  <th aria-label="Copy">Copy</th>
                 </tr>
               </thead>
               <tbody id="returnTableRows"></tbody>
@@ -805,6 +818,7 @@
           </div>
         </section>
       </section>
+      <div class="live-sync-pill" id="liveSyncStatus" role="status" aria-live="off">Live</div>
       <section class="page-panel" id="payment">
         <div class="payment-page-header">
           <h1 class="page-title">Payment</h1>
@@ -817,6 +831,14 @@
           </div>
         </div>
         <section id="paymentSummaryView" hidden>
+          <div class="payment-charge-controls payment-summary-controls">
+            <label for="paymentSummaryMonth">Month and year
+              <input type="month" id="paymentSummaryMonth" />
+            </label>
+            <button type="button" class="refresh-btn" id="paymentSummaryAllButton">All Data</button>
+            <button type="button" class="download-btn" id="paymentSummaryDownloadButton">Download Excel</button>
+            <span class="payment-summary-scope" id="paymentSummaryScope">Showing: All data</span>
+          </div>
           <div class="payment-summary-grid">
             <article class="payment-summary-card">
               <h2>Pathao Summary</h2>
@@ -1113,6 +1135,10 @@
     const changeStatusSelect = document.getElementById('changeStatusSelect');
     const changeStatusUpdateButton = document.getElementById('changeStatusUpdateButton');
     const paymentChargeMonth = document.getElementById('paymentChargeMonth');
+    const paymentSummaryMonth = document.getElementById('paymentSummaryMonth');
+    const paymentSummaryAllButton = document.getElementById('paymentSummaryAllButton');
+    const paymentSummaryDownloadButton = document.getElementById('paymentSummaryDownloadButton');
+    const paymentSummaryScope = document.getElementById('paymentSummaryScope');
     const bahokEntryPopup = document.getElementById('bahokEntryPopup');
     const bahokEntryDate = document.getElementById('bahokEntryDate');
     const bahokEntryRows = document.getElementById('bahokEntryRows');
@@ -1256,7 +1282,34 @@
     let lastRealtimeSyncAt = 0;
     let lastProviderRealtimeSyncAt = 0;
     const REALTIME_SYNC_INTERVAL_MS = 15000;
-    const PROVIDER_REALTIME_SYNC_INTERVAL_MS = 60000;
+    const PROVIDER_REALTIME_SYNC_INTERVAL_MS = 30000;
+    // Silent real-time sync state: background refreshes never clear the screen; the DOM is only
+    // touched when the server data really changed (compared with these snapshots).
+    let loadedInvoiceData = [];
+    let loadedReturnRows = [];
+    let loadedProviderItems = [];
+    let lastDashboardSignature = '';
+    let lastPaymentSummarySignature = '';
+    let lastPaymentChargeSignature = '';
+    const liveSyncStatus = document.getElementById('liveSyncStatus');
+    function markLiveSync() {
+      liveSyncStatus.textContent = `Live · updated ${new Date().toLocaleTimeString('en-GB')}`;
+      liveSyncStatus.classList.add('show');
+    }
+    function copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise((resolve, reject) => {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy') ? resolve() : reject(new Error('Copy failed')); }
+        catch (error) { reject(error); }
+        finally { area.remove(); }
+      });
+    }
     let pathaoMerchantKey = '';
     let pathaoCurrentPage = 1;
     let pathaoTotalPages = 1;
@@ -1417,9 +1470,16 @@
       event.preventDefault();
       updateInvoiceStatus();
     });
-    paymentChargeMonth.addEventListener('change', loadPaymentDeliveryCharge);
-    document.getElementById('dashboardCourierFilter').addEventListener('change', loadDashboard);
-    document.getElementById('refreshDashboardBtn').addEventListener('click', loadDashboard);
+    paymentChargeMonth.addEventListener('change', () => loadPaymentDeliveryCharge());
+    paymentSummaryMonth.addEventListener('change', () => loadPaymentSummary());
+    paymentSummaryAllButton.addEventListener('click', () => {
+      paymentSummaryMonth.value = '';
+      loadPaymentSummary();
+    });
+    paymentSummaryDownloadButton.addEventListener('click', downloadPaymentSummaryExcel);
+    document.getElementById('copyReturnDetailsButton').addEventListener('click', copyAllReturnDetails);
+    document.getElementById('dashboardCourierFilter').addEventListener('change', () => loadDashboard());
+    document.getElementById('refreshDashboardBtn').addEventListener('click', () => loadDashboard());
     loadMorePaymentButton.addEventListener('click', () => {
       if (activePaymentProvider === 'pathao') loadPathaoInvoices(true);
       else if (activePaymentProvider === 'bahok') loadBahokPayments(true);
@@ -1624,7 +1684,7 @@
       paymentMessage.style.display = 'block';
     }
 
-    function renderPaymentSummaryMetrics(container, summary, includeWeight) {
+    function renderPaymentSummaryMetrics(container, summary, includeWeight, hiddenLabels = []) {
       container.replaceChildren();
       const metrics = [
         ['Total Parcel Amount', summary.totalParcelAmount],
@@ -1634,7 +1694,7 @@
       ];
       if (includeWeight) metrics.push(['Weight Charge', summary.weightCharge]);
       metrics.push(['Total Pending Amount', summary.pendingAmount]);
-      metrics.forEach(([label, amount]) => {
+      metrics.filter(([label]) => !hiddenLabels.includes(label)).forEach(([label, amount]) => {
         const metric = document.createElement('div');
         metric.className = 'payment-summary-metric' + (label === 'Total Pending Amount' ? ' pending' : '');
         const title = document.createElement('span');
@@ -1646,22 +1706,79 @@
       });
     }
 
-    async function loadPaymentSummary() {
+    function paymentSummaryPeriodParams() {
+      const [year, month] = paymentSummaryMonth.value.split('-');
+      const params = new URLSearchParams();
+      if (year && month) {
+        params.set('year', year);
+        params.set('month', String(Number(month)));
+      }
+      return params;
+    }
+
+    function describePaymentSummaryScope() {
+      const [year, month] = paymentSummaryMonth.value.split('-');
+      if (!year || !month) return 'Showing: All data';
+      const name = new Date(Number(year), Number(month) - 1, 1)
+        .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      return `Showing: ${name}`;
+    }
+
+    async function loadPaymentSummary(silent = false) {
       const requestId = ++paymentSummaryRequestId;
-      paymentSummaryMessage.hidden = false;
-      paymentSummaryMessage.className = 'invoice-message';
-      paymentSummaryMessage.textContent = 'Loading payment summary...';
+      if (!silent) {
+        paymentSummaryMessage.hidden = false;
+        paymentSummaryMessage.className = 'invoice-message';
+        paymentSummaryMessage.textContent = 'Loading payment summary...';
+      }
       try {
-        const response = await apiFetch('/api/payment-summary');
+        const query = paymentSummaryPeriodParams().toString();
+        const response = await apiFetch(`/api/payment-summary${query ? `?${query}` : ''}`);
         const summary = await readJsonResponse(response, 'Failed to load payment summary');
         if (requestId !== paymentSummaryRequestId) return;
-        renderPaymentSummaryMetrics(pathaoSummaryMetrics, summary.pathao, false);
+        markLiveSync();
+        const signature = `${query}|${JSON.stringify(summary)}`;
+        if (silent && signature === lastPaymentSummarySignature) return;
+        lastPaymentSummarySignature = signature;
+        renderPaymentSummaryMetrics(pathaoSummaryMetrics, summary.pathao, false, ['Total Return Amount']);
         renderPaymentSummaryMetrics(bahokSummaryMetrics, summary.bahok, true);
+        paymentSummaryScope.textContent = describePaymentSummaryScope();
         paymentSummaryMessage.hidden = true;
       } catch (error) {
-        if (requestId !== paymentSummaryRequestId) return;
+        if (silent || requestId !== paymentSummaryRequestId) return;
+        paymentSummaryMessage.hidden = false;
         paymentSummaryMessage.className = 'invoice-message error';
         paymentSummaryMessage.textContent = error.message;
+      }
+    }
+
+    async function downloadPaymentSummaryExcel() {
+      const query = paymentSummaryPeriodParams().toString();
+      paymentSummaryDownloadButton.disabled = true;
+      paymentSummaryDownloadButton.textContent = 'Preparing...';
+      try {
+        const response = await apiFetch(`/api/payment-summary/export${query ? `?${query}` : ''}`);
+        if (!response.ok) {
+          let message = 'Failed to download Excel file';
+          try { message = (await response.json()).error || message; } catch { /* keep default */ }
+          throw new Error(message);
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `payment_summary_${paymentSummaryMonth.value || 'all'}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (error) {
+        paymentSummaryMessage.hidden = false;
+        paymentSummaryMessage.className = 'invoice-message error';
+        paymentSummaryMessage.textContent = error.message;
+      } finally {
+        paymentSummaryDownloadButton.disabled = false;
+        paymentSummaryDownloadButton.textContent = 'Download Excel';
       }
     }
 
@@ -1679,18 +1796,24 @@
         : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
     }
 
-    async function loadDashboard() {
+    async function loadDashboard(silent = false) {
       const requestId = ++dashboardRequestId;
       const refreshButton = document.getElementById('refreshDashboardBtn');
       const courier = document.getElementById('dashboardCourierFilter').value;
-      dashboardMessage.hidden = false;
-      dashboardMessage.className = 'invoice-message';
-      dashboardMessage.textContent = 'Loading dashboard data...';
-      refreshButton.disabled = true;
+      if (!silent) {
+        dashboardMessage.hidden = false;
+        dashboardMessage.className = 'invoice-message';
+        dashboardMessage.textContent = 'Loading dashboard data...';
+        refreshButton.disabled = true;
+      }
       try {
         const response = await apiFetch(`/api/dashboard?courier=${encodeURIComponent(courier)}`);
         const result = await readJsonResponse(response, 'Failed to load dashboard data');
         if (requestId !== dashboardRequestId) return;
+        markLiveSync();
+        const dashboardSignature = `${courier}|${JSON.stringify(result)}`;
+        if (silent && dashboardSignature === lastDashboardSignature) return;
+        lastDashboardSignature = dashboardSignature;
         document.getElementById('dashboardTotalInvoices').textContent = Number(result.totalInvoices || 0).toLocaleString();
         document.getElementById('dashboardReturnedInvoices').textContent = Number(result.returnedInvoices || 0).toLocaleString();
         document.getElementById('dashboardPartialDeliveredInvoices').textContent = Number(result.partialDeliveredInvoices || 0).toLocaleString();
@@ -1750,12 +1873,12 @@
             ? `Showing ${shownCount} of ${Number(result.overdueUnpaidCount).toLocaleString()}`
             : `${shownCount.toLocaleString()} overdue`;
       } catch (error) {
-        if (requestId !== dashboardRequestId) return;
+        if (silent || requestId !== dashboardRequestId) return;
         document.getElementById('dashboardOverdueCountLabel').textContent = 'Data unavailable';
         dashboardMessage.className = 'invoice-message error';
         dashboardMessage.textContent = error.message;
       } finally {
-        if (requestId === dashboardRequestId) refreshButton.disabled = false;
+        if (requestId === dashboardRequestId && !silent) refreshButton.disabled = false;
       }
     }
 
@@ -1763,18 +1886,24 @@
       return new Intl.NumberFormat('en-BD', { maximumFractionDigits: 2 }).format(Number(value) || 0);
     }
 
-    async function loadPaymentDeliveryCharge() {
+    async function loadPaymentDeliveryCharge(silent = false) {
       const requestId = ++paymentChargeRequestId;
       const [yearText, monthText] = paymentChargeMonth.value.split('-');
-      paymentChargeMessage.hidden = false;
-      paymentChargeMessage.className = 'invoice-message payment-charge-message';
-      paymentChargeMessage.textContent = 'Loading delivery charges...';
+      if (!silent) {
+        paymentChargeMessage.hidden = false;
+        paymentChargeMessage.className = 'invoice-message payment-charge-message';
+        paymentChargeMessage.textContent = 'Loading delivery charges...';
+      }
       try {
         if (!yearText || !monthText) throw new Error('Choose a month and year.');
         const params = new URLSearchParams({ year: yearText, month: monthText });
         const response = await apiFetch(`/api/payment-delivery-charge?${params}`);
         const result = await readJsonResponse(response, 'Failed to load delivery charges');
         if (requestId !== paymentChargeRequestId) return;
+        markLiveSync();
+        const chargeSignature = `${yearText}-${monthText}|${JSON.stringify(result)}`;
+        if (silent && chargeSignature === lastPaymentChargeSignature) return;
+        lastPaymentChargeSignature = chargeSignature;
         document.getElementById('paymentChargeTotal').textContent = formatPaymentAmount(result.totalDeliveryCharge);
         document.getElementById('pathaoDeliveryCharge').textContent = formatPaymentAmount(result.pathaoDeliveryCharge);
         document.getElementById('bahokDeliveryCharge').textContent = formatPaymentAmount(result.bahokDeliveryCharge);
@@ -1785,7 +1914,8 @@
           paymentChargeMessage.hidden = true;
         }
       } catch (error) {
-        if (requestId !== paymentChargeRequestId) return;
+        if (silent || requestId !== paymentChargeRequestId) return;
+        paymentChargeMessage.hidden = false;
         paymentChargeMessage.className = 'invoice-message error payment-charge-message';
         paymentChargeMessage.textContent = error.message;
       }
@@ -2381,6 +2511,7 @@
       const requestId = ++pathaoRequestId;
       const page = append ? bahokCurrentPage + 1 : 1;
       if (!append) {
+        loadedProviderItems = [];
         paymentInvoiceRows.replaceChildren();
         showPaymentMessage('Loading Bahok payments...');
       } else {
@@ -2395,6 +2526,7 @@
           throw new Error('Bahok returned an invalid payment list');
         }
         const firstSerial = paymentInvoiceRows.children.length;
+        loadedProviderItems.push(...result.payments);
         result.payments.forEach((payment, index) => {
           paymentInvoiceRows.appendChild(createBahokPaymentRow(payment, firstSerial + index));
         });
@@ -2427,6 +2559,7 @@
       const merchantKey = pathaoMerchantKey;
       const page = append ? pathaoCurrentPage + 1 : 1;
       if (!append) {
+        loadedProviderItems = [];
         paymentInvoiceRows.replaceChildren();
         showPaymentMessage('Loading Pathao invoices...');
       } else {
@@ -2441,6 +2574,7 @@
         if (!pageData || !Array.isArray(pageData.data)) {
           throw new Error('Pathao returned an invalid invoice list');
         }
+        loadedProviderItems.push(...pageData.data);
         pageData.data.forEach((invoice) => paymentInvoiceRows.appendChild(createPathaoInvoiceRow(invoice)));
         pathaoCurrentPage = Number(pageData.current_page) || page;
         pathaoTotalPages = Math.max(1, Number(pageData.total_page || pageData.last_page) || 1);
@@ -2848,6 +2982,7 @@
           returnTableRows.replaceChildren();
           returnVisibleVoidTotal = 0;
         }
+        loadedReturnRows = append ? loadedReturnRows.concat(result.rows) : result.rows.slice();
         renderReturnRows(result.rows);
         returnOffset += result.rows.length;
         returnTableWrap.hidden = false;
@@ -2870,7 +3005,7 @@
       if (!rows.length && returnOffset === 0) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 9;
+        cell.colSpan = 10;
         cell.textContent = 'No Data Found';
         row.appendChild(cell);
         returnTableRows.appendChild(row);
@@ -2905,9 +3040,64 @@
         remarkCell.className = 'return-remark-cell';
         renderReturnRemarkCell(remarkCell, record);
         tableRow.appendChild(remarkCell);
+
+        const copyCell = document.createElement('td');
+        copyCell.className = 'return-copy-cell';
+        const copyButton = createIconButton('Copy name, number and note', 'copy');
+        copyButton.addEventListener('click', async () => {
+          try {
+            await copyTextToClipboard(formatReturnCopyLine(record));
+            flashCopied(copyButton);
+          } catch (error) {
+            showReturnMessage('Copy failed. Please allow clipboard access.', true);
+          }
+        });
+        copyCell.appendChild(copyButton);
+        tableRow.appendChild(copyCell);
         returnTableRows.appendChild(tableRow);
       });
       document.getElementById('returnVoidTotal').textContent = returnVisibleVoidTotal.toLocaleString();
+    }
+
+    // "Name-Number- Note" (the note part is left out when the return has no note).
+    function formatReturnCopyLine(record) {
+      const values = record.values || [];
+      const name = String(values[2] || '').trim();
+      const number = String(values[3] || '').trim();
+      const note = String(values[8] || '').replace(/\s*[\r\n]+\s*/g, ' ').trim();
+      return note ? `${name}-${number}- ${note}` : `${name}-${number}`;
+    }
+
+    function flashCopied(button) {
+      const previousTitle = button.title;
+      button.title = 'Copied!';
+      button.style.color = '#16a34a';
+      setTimeout(() => { button.title = previousTitle; button.style.color = ''; }, 1200);
+    }
+
+    async function copyAllReturnDetails() {
+      const button = document.getElementById('copyReturnDetailsButton');
+      const label = button.querySelector('span');
+      button.disabled = true;
+      try {
+        while (!loadMoreReturnsButton.hidden && !loadMoreReturnsButton.disabled) {
+          if (!(await loadReturnsData(true))) break;
+        }
+        const lines = loadedReturnRows
+          .filter((record) => String((record.values || [])[2] || '').trim() || String((record.values || [])[3] || '').trim())
+          .map(formatReturnCopyLine);
+        if (!lines.length) {
+          showReturnMessage('There are no returns to copy for this date.', true);
+          return;
+        }
+        await copyTextToClipboard(lines.join('\n'));
+        label.textContent = `Copied ${lines.length}`;
+        setTimeout(() => { label.textContent = 'Copy All'; }, 1500);
+      } catch (error) {
+        showReturnMessage('Copy failed. Please allow clipboard access.', true);
+      } finally {
+        button.disabled = false;
+      }
     }
 
     function renderReturnRemarkCell(cell, record) {
@@ -3041,7 +3231,8 @@
         checked: ['M18 6 7 17l-5-5', 'M22 10 13 19l-3-3'],
         plus: ['M12 5v14', 'M5 12h14'],
         save: ['M5 12l4 4L19 6'],
-        clear: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 14h10l1-14', 'M9 7V4h6v3']
+        clear: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 14h10l1-14', 'M9 7V4h6v3'],
+        copy: ['M10 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z', 'M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2']
       };
       paths[type].forEach((pathData) => {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -3584,8 +3775,42 @@
       return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
+    // Courier lookups go to a separate (free-tier) backend that is slow when cold, so:
+    //  - answers are cached for a few minutes (repeat searches are instant),
+    //  - identical in-flight requests are shared,
+    //  - the backend is woken up in the background as soon as the invoice search is used.
+    const COURIER_CACHE_TTL_MS = 5 * 60 * 1000;
+    const courierResponseCache = new Map();
+    const courierInflight = new Map();
+    let lastCourierWarmupAt = 0;
+
+    function warmCourierBackend() {
+      if (Date.now() - lastCourierWarmupAt < 4 * 60 * 1000) return;
+      lastCourierWarmupAt = Date.now();
+      window.fetch(`${COURIER_API_BASE_URL}/`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+    }
+
+    function cachedCourierFetch(url) {
+      const hit = courierResponseCache.get(url);
+      if (hit && Date.now() - hit.at < COURIER_CACHE_TTL_MS) {
+        return Promise.resolve(new Response(hit.body, { status: hit.status }));
+      }
+      if (courierInflight.has(url)) {
+        return courierInflight.get(url).then((entry) => new Response(entry.body, { status: entry.status }));
+      }
+      const request = (async () => {
+        const response = await fetch(url, { signal: AbortSignal.timeout(60000) });
+        const entry = { body: await response.text(), status: response.status, at: Date.now() };
+        if (response.ok || response.status === 404) courierResponseCache.set(url, entry);
+        return entry;
+      })();
+      courierInflight.set(url, request);
+      request.then(() => courierInflight.delete(url), () => courierInflight.delete(url));
+      return request.then((entry) => new Response(entry.body, { status: entry.status }));
+    }
+
     async function requestCourierTracking(searchValue) {
-      const response = await fetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(searchValue)}`);
+      const response = await cachedCourierFetch(`${COURIER_API_BASE_URL}/api/track/${encodeURIComponent(searchValue)}`);
       if (response.status === 404) return null;
       const data = await readJsonResponse(response, 'Courier tracking failed');
       if (data.status !== 'success') return null;
@@ -3620,16 +3845,19 @@
       courierTrackButton.textContent = 'Searching...';
       setCourierTrackingMessage('Searching across all merchants...');
       try {
+        const isPhoneSearch = /^01\d{9}$/.test(idInput.replace(/^\+?88/, ''));
+        // Start the All Invoice lookup at the same time as the courier lookup (not after it).
+        const invoiceLookup = isPhoneSearch ? null : findInvoiceByMerchantOrderId(idInput);
+        if (invoiceLookup) invoiceLookup.catch(() => {});
         let data = await requestCourierTracking(idInput);
         if (!data) {
-          const phoneInput = idInput.replace(/^\+?88/, '');
-          if (/^01\d{9}$/.test(phoneInput)) {
+          if (isPhoneSearch) {
             setCourierTrackingMessage('No parcel details found for this mobile number.', true);
             return;
           }
 
           setCourierTrackingMessage('Looking up the Merchant Order ID in All Invoice...');
-          const invoice = await findInvoiceByMerchantOrderId(idInput);
+          const invoice = await invoiceLookup;
           if (!invoice) {
             setCourierTrackingMessage('Merchant Order ID was not found in All Invoice or courier tracking.', true);
             return;
@@ -3748,7 +3976,7 @@
       courierHistoryButton.disabled = true;
       courierHistoryButton.textContent = 'Checking...';
       try {
-        const response = await fetch(`${COURIER_API_BASE_URL}/api/customer-history/${encodeURIComponent(phone)}`);
+        const response = await cachedCourierFetch(`${COURIER_API_BASE_URL}/api/customer-history/${encodeURIComponent(phone)}`);
         const data = await readJsonResponse(response, 'Courier history could not be loaded');
         if (data.status !== 'success') throw new Error(data.message || 'Courier history could not be loaded.');
         courierHistoryCards.replaceChildren(
@@ -3888,6 +4116,7 @@
         nextSearchOffset = 0;
         hasMoreInvoices = true;
         invoiceRows.replaceChildren();
+        loadedInvoiceData = [];
       } else if (isLoadingInvoices || !hasMoreInvoices) {
         return;
       }
@@ -3917,6 +4146,7 @@
         });
         const data = await readJsonResponse(response, 'Failed to load invoices');
         if (requestId !== invoiceRequestId) return;
+        loadedInvoiceData.push(...data.invoices);
         data.invoices.forEach((row) => invoiceRows.appendChild(createInvoiceRow(row)));
         hasMoreInvoices = data.hasMore;
         nextBeforeRow = data.nextBeforeRow === undefined ? null : data.nextBeforeRow;
@@ -3950,31 +4180,133 @@
       }
     }
 
+    // ---- Silent real-time sync -------------------------------------------------------------
+    // Fetches fresh data in the background WITHOUT clearing the table, showing "Loading" text or
+    // moving the scroll position. The screen is only updated (in one swap) when data changed.
     async function refreshInvoicesForRealtimeSync() {
-      const loadedRows = invoiceRows.children.length;
-      await loadInvoices(true);
-      while (invoiceRows.children.length < loadedRows && hasMoreInvoices && !isLoadingInvoices) {
-        await loadInvoices();
+      if (isLoadingInvoices) return;
+      const startedAt = invoiceRequestId;
+      const wantCount = Math.max(loadedInvoiceData.length, 50);
+      const search = currentSearch;
+      const fromDate = document.getElementById('downloadFromDate').value;
+      const toDate = document.getElementById('downloadToDate').value;
+      const collected = [];
+      let more = true;
+      let before = null;
+      let offset = 0;
+      while (collected.length < wantCount && more) {
+        const params = new URLSearchParams({ limit: '50' });
+        if (search) {
+          params.set('search', search);
+          params.set('offset', String(offset));
+        } else if (before !== null) {
+          params.set('beforeRow', String(before));
+        }
+        if (fromDate && toDate) {
+          params.set('from', fromDate);
+          params.set('to', toDate);
+        }
+        const response = await apiFetch(`/api/invoices?${params}`);
+        const data = await readJsonResponse(response, 'Failed to refresh invoices');
+        if (startedAt !== invoiceRequestId || isLoadingInvoices || search !== currentSearch) return;
+        collected.push(...data.invoices);
+        more = Boolean(data.hasMore);
+        before = data.nextBeforeRow === undefined ? null : data.nextBeforeRow;
+        offset = data.nextOffset === undefined ? offset : data.nextOffset;
       }
+      markLiveSync();
+      if (JSON.stringify(collected) === JSON.stringify(loadedInvoiceData)) return;
+      const fragment = document.createDocumentFragment();
+      collected.forEach((row) => fragment.appendChild(createInvoiceRow(row)));
+      const scrollTop = tableWrap.scrollTop;
+      invoiceRows.replaceChildren(fragment);
+      tableWrap.scrollTop = scrollTop;
+      loadedInvoiceData = collected;
+      hasMoreInvoices = more;
+      nextBeforeRow = before;
+      nextSearchOffset = offset;
+      if (collected.length) invoiceMessage.style.display = 'none';
+      else showInvoiceMessage('No invoice data found.');
+      updateFixedScrollbar();
     }
 
     async function refreshReturnsForRealtimeSync() {
-      const loadedPages = Math.max(1, Math.ceil(returnOffset / 50));
-      for (let page = 0; page < loadedPages; page += 1) {
-        if (page > 0 && loadMoreReturnsButton.hidden) break;
-        if (!(await loadReturnsData(page > 0, page === 0))) break;
+      const fromDate = returnDateFrom.value;
+      const toDate = returnDateTo.value;
+      if (fromDate && toDate && fromDate > toDate) return;
+      const token = returnDataRequestId;
+      const pages = Math.max(1, Math.ceil(returnOffset / 50));
+      const collected = [];
+      let more = false;
+      for (let page = 0; page < pages; page += 1) {
+        const params = new URLSearchParams({ offset: String(page * 50) });
+        if (fromDate) params.set('from', fromDate);
+        if (toDate) params.set('to', toDate);
+        const response = await apiFetch(`/api/returns/data?${params}`);
+        const result = await readJsonResponse(response, 'Failed to refresh return details');
+        if (token !== returnDataRequestId || !Array.isArray(result.rows)) return;
+        collected.push(...result.rows);
+        more = Boolean(result.hasMore);
+        if (!more) break;
       }
+      markLiveSync();
+      if (JSON.stringify(collected) === JSON.stringify(loadedReturnRows)) return;
+      const scrollTop = returnTableWrap.scrollTop;
+      returnTableRows.replaceChildren();
+      returnVisibleVoidTotal = 0;
+      returnOffset = 0;
+      renderReturnRows(collected);
+      returnOffset = collected.length;
+      loadedReturnRows = collected;
+      loadMoreReturnsButton.hidden = !more;
+      returnTableWrap.scrollTop = scrollTop;
     }
 
     async function refreshProviderPaymentsForRealtimeSync() {
-      const loadedPages = Math.max(1, activePaymentProvider === 'pathao' ? pathaoCurrentPage : bahokCurrentPage);
-      for (let page = 0; page < loadedPages; page += 1) {
-        if (page > 0 && paymentPagination.hidden) break;
-        const refreshed = activePaymentProvider === 'pathao'
-          ? await loadPathaoInvoices(page > 0)
-          : await loadBahokPayments(page > 0);
-        if (!refreshed) break;
+      const provider = activePaymentProvider;
+      const merchantKey = pathaoMerchantKey;
+      const token = pathaoRequestId;
+      const pages = Math.max(1, provider === 'pathao' ? pathaoCurrentPage : bahokCurrentPage);
+      const collected = [];
+      let meta = null;
+      for (let page = 1; page <= pages; page += 1) {
+        const url = provider === 'pathao'
+          ? `/api/pathao/${encodeURIComponent(merchantKey)}/invoices?page=${page}&limit=10`
+          : `/api/bahok/payments?page=${page}`;
+        const response = await apiFetch(url);
+        const result = await readJsonResponse(response, 'Failed to refresh payments');
+        if (token !== pathaoRequestId || provider !== activePaymentProvider) return;
+        const items = provider === 'pathao' ? result.data && result.data.data : result.payments;
+        if (!Array.isArray(items)) return;
+        collected.push(...items);
+        meta = provider === 'pathao' ? result.data : result;
+        const lastPage = provider === 'pathao'
+          ? Number(meta.total_page || meta.last_page) || 1
+          : Number(meta.lastPage) || 1;
+        if (page >= lastPage) break;
       }
+      markLiveSync();
+      if (JSON.stringify(collected) === JSON.stringify(loadedProviderItems)) return;
+      const fragment = document.createDocumentFragment();
+      collected.forEach((item, index) => fragment.appendChild(
+        provider === 'pathao' ? createPathaoInvoiceRow(item) : createBahokPaymentRow(item, index)
+      ));
+      const scrollTop = paymentTableWrap.scrollTop;
+      paymentInvoiceRows.replaceChildren(fragment);
+      paymentTableWrap.scrollTop = scrollTop;
+      loadedProviderItems = collected;
+      if (provider === 'pathao') {
+        pathaoCurrentPage = Math.max(1, Number(meta.current_page) || pathaoCurrentPage);
+        pathaoTotalPages = Math.max(1, Number(meta.total_page || meta.last_page) || 1);
+        paymentPageLabel.textContent = `Showing ${collected.length} of ${Number(meta.total) || 0} invoices`;
+        paymentPagination.hidden = pathaoCurrentPage >= pathaoTotalPages;
+      } else {
+        bahokCurrentPage = Math.max(1, Number(meta.currentPage) || bahokCurrentPage);
+        bahokTotalPages = Math.max(1, Number(meta.lastPage) || 1);
+        paymentPageLabel.textContent = `Showing ${collected.length} of ${Number(meta.total) || 0} payments`;
+        paymentPagination.hidden = bahokCurrentPage >= bahokTotalPages;
+      }
+      if (collected.length) paymentMessage.style.display = 'none';
     }
 
     function hasOpenRealtimeBlockingOverlay() {
@@ -3997,49 +4329,35 @@
       lastRealtimeSyncAt = Date.now();
       try {
         if (activePanel.id === 'dashboard') {
-          if (!document.getElementById('refreshDashboardBtn').disabled) await loadDashboard();
+          await loadDashboard(true);
         } else if (activePanel.id === 'all-invoice') {
-          if (!isLoadingInvoices && !refreshInvoicesBtn.disabled) {
-            await refreshInvoicesForRealtimeSync();
-          }
+          await refreshInvoicesForRealtimeSync();
         } else if (activePanel.id === 'return') {
-          if (!returnDetailsSection.hidden) {
-            if (!loadMoreReturnsButton.disabled) await refreshReturnsForRealtimeSync();
-          } else if (
-            returnOrder
-            && !returnOrderResult.hidden
-            && !returnSearchButton.disabled
-            && !document.getElementById('returnVoidAmount').value
-            && document.getElementById('returnNewStatus').value === 'Return Receved'
-          ) {
-            await searchReturnOrder();
+          if (!returnDetailsSection.hidden && !loadMoreReturnsButton.disabled && returnTableRows.children.length) {
+            await refreshReturnsForRealtimeSync();
           }
         } else if (activePanel.id === 'payment') {
           if (activePaymentProvider === 'summary' && paymentSummaryMessage.textContent !== 'Loading payment summary...') {
-            await loadPaymentSummary();
+            await loadPaymentSummary(true);
           } else if (
             activePaymentProvider === 'delivery-charge'
             && paymentChargeMessage.textContent !== 'Loading delivery charges...'
           ) {
-            await loadPaymentDeliveryCharge();
-          } else if (
-            activePaymentProvider === 'change-status'
-            && changeStatusInvoice
-            && !changeStatusSearchButton.disabled
-            && !changeStatusSelect.value
-          ) {
-            await searchInvoiceForStatus();
+            await loadPaymentDeliveryCharge(true);
           } else if (
             (activePaymentProvider === 'pathao' || activePaymentProvider === 'bahok')
             && !paymentSearch.value.trim()
             && !paymentSearchButton.disabled
             && !loadMorePaymentButton.disabled
+            && paymentInvoiceRows.children.length
             && Date.now() - lastProviderRealtimeSyncAt >= PROVIDER_REALTIME_SYNC_INTERVAL_MS
           ) {
             lastProviderRealtimeSyncAt = Date.now();
             await refreshProviderPaymentsForRealtimeSync();
           }
         }
+      } catch (error) {
+        console.warn('Background sync skipped:', error);
       } finally {
         realtimeSyncRunning = false;
       }
@@ -4245,6 +4563,8 @@
         uploadBtn.textContent = 'Upload Selected Sheets';
       }
     });
+    invoiceSearch.addEventListener('focus', warmCourierBackend);
+    invoiceSearch.addEventListener('input', warmCourierBackend);
     loadReturnSheet();
   </script>
 </body>
