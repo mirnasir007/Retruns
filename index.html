@@ -462,9 +462,6 @@
     .payment-charge-message { min-height: 58px; }
     .payment-summary-controls { flex-wrap: wrap; }
     .payment-summary-scope { align-self: center; color: var(--muted); font-size: 12px; font-weight: 650; }
-    .live-sync-pill { position: fixed; right: 14px; bottom: 12px; z-index: 40; display: none; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--muted); font-size: 11.5px; font-weight: 650; box-shadow: var(--shadow-sm); pointer-events: none; }
-    .live-sync-pill.show { display: inline-flex; }
-    .live-sync-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; }
     .return-copy-btn { display: inline-flex; align-items: center; gap: 6px; }
     .return-copy-btn svg { width: 14px; height: 14px; }
     .return-copy-cell { width: 48px; text-align: center; }
@@ -557,11 +554,6 @@
     .details-table-wrap .invoice-table { width: max-content; min-width: 100%; }
     .details-message { margin: 0; padding: 10px; }
     .details-actions { display: flex; justify-content: flex-end; }
-    .verification-status {
-      min-width: 160px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 8px;
-      background: #fff; color: var(--text); font: inherit; font-weight: 600;
-    }
-    .verification-status:disabled { opacity: .7; background: var(--surface-2); }
     .missing-invoice-status { color: var(--danger) !important; font-weight: 700; }
     .found-invoice-status { color: var(--success) !important; font-weight: 600; }
 
@@ -798,8 +790,8 @@
             <table class="invoice-table return-table">
               <thead>
                 <tr>
-                  <th>Receive Date</th>
                   <th>Serial</th>
+                  <th>Receive Date</th>
                   <th>Order ID</th>
                   <th>Name</th>
                   <th>Number</th>
@@ -818,7 +810,6 @@
           </div>
         </section>
       </section>
-      <div class="live-sync-pill" id="liveSyncStatus" role="status" aria-live="off">Live</div>
       <section class="page-panel" id="payment">
         <div class="payment-page-header">
           <h1 class="page-title">Payment</h1>
@@ -1242,12 +1233,10 @@
       { title: 'Recipient Phone(*)', index: 3 },
       { title: 'Amount', index: 5 },
       { title: 'Quantity', index: 6, product: true },
-      { title: 'Instruction', index: 8 },
       { title: 'Courier', index: 9 },
       { title: 'Payment Date', index: 11 },
       { title: 'Payment Id', index: 12 }
     ];
-    const statuses = ['Paid', 'Partial Delivery', 'Returned', 'Return Received', 'Exchanges', 'Lost'];
     const spreadsheetHeaders = [
       'Date', 'Delivery Status', 'Merchant Order Id', 'RecipientName(*)',
       'Recipient Phone(*)', 'Recipient Address(*)', 'Amount', 'Quantity',
@@ -1291,11 +1280,6 @@
     let lastDashboardSignature = '';
     let lastPaymentSummarySignature = '';
     let lastPaymentChargeSignature = '';
-    const liveSyncStatus = document.getElementById('liveSyncStatus');
-    function markLiveSync() {
-      liveSyncStatus.textContent = `Live · updated ${new Date().toLocaleTimeString('en-GB')}`;
-      liveSyncStatus.classList.add('show');
-    }
     function copyTextToClipboard(text) {
       if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
       return new Promise((resolve, reject) => {
@@ -1736,7 +1720,6 @@
         const response = await apiFetch(`/api/payment-summary${query ? `?${query}` : ''}`);
         const summary = await readJsonResponse(response, 'Failed to load payment summary');
         if (requestId !== paymentSummaryRequestId) return;
-        markLiveSync();
         const signature = `${query}|${JSON.stringify(summary)}`;
         if (silent && signature === lastPaymentSummarySignature) return;
         lastPaymentSummarySignature = signature;
@@ -1810,7 +1793,6 @@
         const response = await apiFetch(`/api/dashboard?courier=${encodeURIComponent(courier)}`);
         const result = await readJsonResponse(response, 'Failed to load dashboard data');
         if (requestId !== dashboardRequestId) return;
-        markLiveSync();
         const dashboardSignature = `${courier}|${JSON.stringify(result)}`;
         if (silent && dashboardSignature === lastDashboardSignature) return;
         lastDashboardSignature = dashboardSignature;
@@ -1900,7 +1882,6 @@
         const response = await apiFetch(`/api/payment-delivery-charge?${params}`);
         const result = await readJsonResponse(response, 'Failed to load delivery charges');
         if (requestId !== paymentChargeRequestId) return;
-        markLiveSync();
         const chargeSignature = `${yearText}-${monthText}|${JSON.stringify(result)}`;
         if (silent && chargeSignature === lastPaymentChargeSignature) return;
         lastPaymentChargeSignature = chargeSignature;
@@ -2325,28 +2306,12 @@
           const currentStatus = match.deliveryStatus.toLowerCase();
           if (currentStatus === 'partial delivered') match.deliveryStatus = 'Partial Delivery';
           if (currentStatus === 'return receved') match.deliveryStatus = 'Return Received';
-          const statusSelect = document.createElement('select');
-          statusSelect.className = 'verification-status';
-          statusSelect.setAttribute('aria-label', `Delivery status for ${match.merchantOrderId}`);
-          const statusOptions = [...statuses];
-          if (match.deliveryStatus && !statusOptions.includes(match.deliveryStatus)) {
-            statusOptions.unshift(match.deliveryStatus);
+          if (match.deliveryStatus) {
+            const statusPill = document.createElement('span');
+            statusPill.className = `pill tone-${statusTone(match.deliveryStatus)}`;
+            statusPill.textContent = match.deliveryStatus;
+            statusCell.appendChild(statusPill);
           }
-          statusOptions.forEach((status) => {
-            const option = document.createElement('option');
-            option.value = status;
-            option.textContent = status;
-            statusSelect.appendChild(option);
-          });
-          statusSelect.value = match.deliveryStatus;
-          statusSelect.disabled = verification.locked;
-          applyStatusTone(statusSelect, match.deliveryStatus);
-          statusSelect.addEventListener('change', () => {
-            match.deliveryStatus = statusSelect.value;
-            applyStatusTone(statusSelect, match.deliveryStatus);
-            renderVerificationSummary();
-          });
-          statusCell.appendChild(statusSelect);
         }
         row.appendChild(statusCell);
 
@@ -3014,7 +2979,7 @@
       rows.forEach((record, index) => {
         const values = record.values || [];
         const tableRow = document.createElement('tr');
-        const visibleValues = [values[0], returnOffset + index + 1, values[1], values[2], values[3], values[4], displayReturnStatus(values[5])];
+        const visibleValues = [returnOffset + index + 1, values[0], values[1], values[2], values[3], values[4], displayReturnStatus(values[5])];
         visibleValues.forEach((value, valueIndex) => {
           const cell = document.createElement('td');
           cell.textContent = value === undefined || value === null || value === '' ? '-' : String(value);
@@ -4214,7 +4179,6 @@
         before = data.nextBeforeRow === undefined ? null : data.nextBeforeRow;
         offset = data.nextOffset === undefined ? offset : data.nextOffset;
       }
-      markLiveSync();
       if (JSON.stringify(collected) === JSON.stringify(loadedInvoiceData)) return;
       const fragment = document.createDocumentFragment();
       collected.forEach((row) => fragment.appendChild(createInvoiceRow(row)));
@@ -4249,7 +4213,6 @@
         more = Boolean(result.hasMore);
         if (!more) break;
       }
-      markLiveSync();
       if (JSON.stringify(collected) === JSON.stringify(loadedReturnRows)) return;
       const scrollTop = returnTableWrap.scrollTop;
       returnTableRows.replaceChildren();
@@ -4285,7 +4248,6 @@
           : Number(meta.lastPage) || 1;
         if (page >= lastPage) break;
       }
-      markLiveSync();
       if (JSON.stringify(collected) === JSON.stringify(loadedProviderItems)) return;
       const fragment = document.createDocumentFragment();
       collected.forEach((item, index) => fragment.appendChild(
