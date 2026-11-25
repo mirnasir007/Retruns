@@ -121,6 +121,8 @@
     .dashboard-stat-card { display: grid; gap: 12px; min-height: 126px; padding: 19px; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
     .dashboard-stat-card span { color: var(--muted); font-size: 12px; font-weight: 650; }
     .dashboard-stat-card strong { color: var(--text); font-size: 27px; font-weight: 750; }
+    .dashboard-stat-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .dashboard-stat-card .dashboard-view-btn { padding: 5px 9px; font-size: 11px; }
     .dashboard-stat-card.overdue { border-color: #fed7aa; background: #fffaf3; }
     .dashboard-stat-card.overdue strong { color: #c2410c; }
     .dashboard-section { overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: #fff; box-shadow: var(--shadow-sm); }
@@ -246,6 +248,9 @@
     .return-save-grid .save-custom-btn { min-width: 120px; padding: 11px 20px; }
     .return-data-controls { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
     .return-date-field { display: grid; gap: 6px; min-width: 220px; color: var(--text-2); font-size: 12px; font-weight: 600; }
+    .return-details-search { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .return-details-search input { min-width: 210px; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: #fff; color: var(--text); font: inherit; }
+    .return-details-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, .15); }
     .return-table-wrap { max-height: calc(100vh - 320px); overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
     .return-table { min-width: 880px; }
     .return-void-cell { color: var(--danger) !important; font-weight: 700; }
@@ -604,6 +609,8 @@
       .download-controls { justify-content: flex-start; flex-wrap: wrap; }
       .return-search-card { grid-template-columns: 1fr; gap: 9px; padding: 16px; }
       .return-search-card .search-btn { width: 100%; }
+      .return-details-search { width: 100%; margin-left: 0; }
+      .return-details-search input { flex: 1; min-width: 0; }
       .return-save-grid { grid-template-columns: 1fr; }
       .return-save-grid .save-custom-btn { width: 100%; }
       .payment-summary-grid { grid-template-columns: 1fr; min-height: 0; }
@@ -679,11 +686,11 @@
         </div>
         <div class="dashboard-metrics" aria-live="polite">
           <article class="dashboard-stat-card"><span>Total Invoices</span><strong id="dashboardTotalInvoices">—</strong></article>
-          <article class="dashboard-stat-card"><span>Returned</span><strong id="dashboardReturnedInvoices">—</strong></article>
+          <article class="dashboard-stat-card"><span>Returned</span><div class="dashboard-stat-card-footer"><strong id="dashboardReturnedInvoices">—</strong><button type="button" class="refresh-btn dashboard-view-btn" data-dashboard-details="returned">View</button></div></article>
           <article class="dashboard-stat-card"><span>Partial Delivered</span><strong id="dashboardPartialDeliveredInvoices">—</strong></article>
           <article class="dashboard-stat-card"><span>Return Receved</span><strong id="dashboardReturnRecevedInvoices">—</strong></article>
           <article class="dashboard-stat-card"><span>Exchanges</span><strong id="dashboardExchangeInvoices">—</strong></article>
-          <article class="dashboard-stat-card"><span>Unpaid</span><strong id="dashboardUnpaidInvoices">—</strong></article>
+          <article class="dashboard-stat-card"><span>Unpaid</span><div class="dashboard-stat-card-footer"><strong id="dashboardUnpaidInvoices">—</strong><button type="button" class="refresh-btn dashboard-view-btn" data-dashboard-details="unpaid">View</button></div></article>
           <article class="dashboard-stat-card"><span>Paid</span><strong id="dashboardPaidInvoices">—</strong></article>
           <article class="dashboard-stat-card overdue"><span>Unpaid for 10+ Days</span><strong id="dashboardOverdueCount">—</strong></article>
         </div>
@@ -809,6 +816,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
               <span>Copy All</span>
             </button>
+            <form class="return-details-search" id="returnDetailsSearchForm">
+              <input id="returnDetailsSearchInput" type="search" placeholder="Order ID or Number" aria-label="Search Returns by Order ID or Number" />
+              <button type="submit" class="search-btn" id="returnDetailsSearchButton">Search</button>
+            </form>
           </div>
           <div class="return-card" id="returnStats" hidden>
             <strong>Visible Void Total: </strong><span id="returnVoidTotal">0</span>
@@ -1211,6 +1222,8 @@
     const returnTableWrap = document.getElementById('returnTableWrap');
     const returnDateFrom = document.getElementById('returnDateFrom');
     const returnDateTo = document.getElementById('returnDateTo');
+    const returnDetailsSearchForm = document.getElementById('returnDetailsSearchForm');
+    const returnDetailsSearchInput = document.getElementById('returnDetailsSearchInput');
     const returnTableRows = document.getElementById('returnTableRows');
     const loadMoreReturnsButton = document.getElementById('loadMoreReturnsButton');
     const invoiceTable = document.querySelector('#all-invoice .invoice-table');
@@ -1266,6 +1279,11 @@
       'Recipient Phone(*)', 'Recipient Address(*)', 'Amount', 'Quantity',
       'Product name', 'Instruction', 'Courier', 'Payment Date', 'Payment Id',
       'Note', 'Delivery Charge'
+    ];
+    const dashboardInvoiceHeaders = [
+      'Delivery Status', 'Merchant Order Id', 'RecipientName(*)', 'Recipient Phone(*)',
+      'Recipient Address(*)', 'Amount', 'Quantity', 'Product name', 'Instruction',
+      'Courier', 'Date', 'Payment Date', 'Payment Id', 'Note', 'Delivery Charge'
     ];
     invoiceColumns.forEach((column) => {
       const th = document.createElement('th');
@@ -1331,6 +1349,7 @@
     let returnOrder = null;
     let returnOffset = 0;
     let returnVisibleVoidTotal = 0;
+    let returnSearchActive = false;
     let returnDataRequestId = 0;
     let paymentDetailsRequestId = 0;
     let paymentSummaryRequestId = 0;
@@ -1460,7 +1479,14 @@
     });
     loadMoreReturnsButton.addEventListener('click', () => loadReturnsData(true));
     [returnDateFrom, returnDateTo].forEach((input) => {
-      input.addEventListener('change', () => loadReturnsData(false));
+      input.addEventListener('change', () => {
+        returnDetailsSearchInput.value = '';
+        loadReturnsData(false);
+      });
+    });
+    returnDetailsSearchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      searchReturnDetails();
     });
     document.getElementById('copyReturnAmount').addEventListener('click', copyReturnAmount);
     document.getElementById('returnVoidAmount').addEventListener('input', updateReturnStatusFromVoidAmount);
@@ -1488,6 +1514,9 @@
     document.getElementById('copyReturnDetailsButton').addEventListener('click', copyAllReturnDetails);
     document.getElementById('dashboardCourierFilter').addEventListener('change', () => loadDashboard());
     document.getElementById('refreshDashboardBtn').addEventListener('click', () => loadDashboard());
+    document.querySelectorAll('[data-dashboard-details]').forEach((button) => {
+      button.addEventListener('click', () => openDashboardDetails(button.dataset.dashboardDetails));
+    });
     loadMorePaymentButton.addEventListener('click', () => {
       if (activePaymentProvider === 'pathao') loadPathaoInvoices(true);
       else if (activePaymentProvider === 'bahok') loadBahokPayments(true);
@@ -1942,6 +1971,32 @@
       paymentDetailsOverlay.hidden = false;
       paymentDetailsOverlay.classList.add('open');
       document.body.style.overflow = 'hidden';
+    }
+
+    async function openDashboardDetails(status) {
+      if (!['returned', 'unpaid'].includes(status)) return;
+      const requestId = ++paymentDetailsRequestId;
+      const courier = document.getElementById('dashboardCourierFilter').value;
+      const title = status === 'returned' ? 'Returned Invoices' : 'Unpaid Invoices';
+      showPaymentDetails(title, `All ${status} invoice details from All Invoice`);
+      paymentDetailsSearchForm.hidden = true;
+      try {
+        const params = new URLSearchParams({ status, courier });
+        const response = await apiFetch(`/api/dashboard/details?${params}`);
+        const result = await readJsonResponse(response, `Failed to load ${status} invoice details`);
+        if (requestId !== paymentDetailsRequestId) return;
+        if (!Array.isArray(result.invoices)) throw new Error('Server returned invalid invoice details.');
+        renderPaymentDetails(dashboardInvoiceHeaders, result.invoices.map((invoice) => invoice.values || []));
+        paymentDetailsSummary.hidden = true;
+        paymentDetailsSearchForm.hidden = true;
+        paymentDetailsSubtitle.textContent = `${result.invoices.length.toLocaleString()} records`;
+      } catch (error) {
+        if (requestId !== paymentDetailsRequestId) return;
+        paymentDetailsTableWrap.hidden = true;
+        paymentDetailsMessage.className = 'invoice-message details-message error';
+        paymentDetailsMessage.textContent = error.message;
+        paymentDetailsMessage.style.display = 'block';
+      }
     }
 
     function renderPaymentDetails(headers, rows) {
@@ -2928,6 +2983,8 @@
     }
 
     async function loadReturnsData(append, silent = false) {
+      returnSearchActive = false;
+      document.getElementById('returnDetailsSearchButton').disabled = false;
       if (!returnSheetLoaded && !(await loadReturnSheet())) return false;
       if (!returnSheetName) {
         showReturnMessage('The Returns sheet is not available.', true);
@@ -2994,12 +3051,52 @@
       return true;
     }
 
-    function renderReturnRows(rows) {
+    async function searchReturnDetails() {
+      const query = returnDetailsSearchInput.value.trim();
+      if (!query) {
+        showReturnMessage('Enter an Order ID or Number to search.', true);
+        return;
+      }
+      const requestId = ++returnDataRequestId;
+      returnSearchActive = false;
+      returnOffset = 0;
+      returnVisibleVoidTotal = 0;
+      loadMoreReturnsButton.disabled = false;
+      loadedReturnRows = [];
+      returnTableRows.replaceChildren();
+      document.getElementById('returnVoidTotal').textContent = '0';
+      document.getElementById('returnStats').hidden = true;
+      returnTableWrap.hidden = true;
+      loadMoreReturnsButton.hidden = true;
+      showReturnMessage('Searching all Returns data...');
+      const button = document.getElementById('returnDetailsSearchButton');
+      button.disabled = true;
+      try {
+        const params = new URLSearchParams({ query });
+        const response = await apiFetch(`/api/returns/search-details?${params}`);
+        const result = await readJsonResponse(response, 'Failed to search Returns data');
+        if (requestId !== returnDataRequestId) return;
+        if (!Array.isArray(result.rows)) throw new Error('Server returned invalid return details.');
+        returnSearchActive = true;
+        loadedReturnRows = result.rows;
+        renderReturnRows(result.rows, 'No data !');
+        returnOffset = result.rows.length;
+        returnTableWrap.hidden = false;
+        document.getElementById('returnStats').hidden = false;
+        returnMessage.hidden = true;
+      } catch (error) {
+        if (requestId === returnDataRequestId) showReturnMessage(error.message, true);
+      } finally {
+        if (requestId === returnDataRequestId) button.disabled = false;
+      }
+    }
+
+    function renderReturnRows(rows, emptyMessage = 'No Data Found') {
       if (!rows.length && returnOffset === 0) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
         cell.colSpan = 10;
-        cell.textContent = 'No Data Found';
+        cell.textContent = emptyMessage;
         row.appendChild(cell);
         returnTableRows.appendChild(row);
         return;
@@ -3100,6 +3197,7 @@
       const remark = String((record.values || [])[8] || '');
       const action = createIconButton(remark ? 'View remark' : 'Add remark', remark ? 'eye' : 'plus');
       const popover = makePopover();
+      let hoverHideTimer = null;
 
       const openEditor = (initialValue) => {
         popover.replaceChildren();
@@ -3181,6 +3279,23 @@
         const textarea = popover.querySelector('textarea');
         if (textarea && !popover.hidden) textarea.focus();
       });
+      if (remark) {
+        action.addEventListener('mouseenter', () => {
+          if (hoverHideTimer) clearTimeout(hoverHideTimer);
+          showFloatingPanel(popover, action, 240);
+        });
+        action.addEventListener('mouseleave', () => {
+          hoverHideTimer = setTimeout(() => {
+            if (!popover.matches(':hover')) popover.hidden = true;
+          }, 180);
+        });
+        popover.addEventListener('mouseenter', () => {
+          if (hoverHideTimer) clearTimeout(hoverHideTimer);
+        });
+        popover.addEventListener('mouseleave', () => {
+          popover.hidden = true;
+        });
+      }
       content.append(action, popover);
       cell.appendChild(content);
     }
@@ -4339,7 +4454,7 @@
         } else if (activePanel.id === 'all-invoice') {
           await refreshInvoicesForRealtimeSync();
         } else if (activePanel.id === 'return') {
-          if (!returnDetailsSection.hidden && !loadMoreReturnsButton.disabled && returnTableRows.children.length) {
+          if (!returnSearchActive && !returnDetailsSection.hidden && !loadMoreReturnsButton.disabled && returnTableRows.children.length) {
             await refreshReturnsForRealtimeSync();
           }
         } else if (activePanel.id === 'payment') {
