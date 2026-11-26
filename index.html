@@ -2381,13 +2381,7 @@
       if (match.status === 'Partial Delivered') {
         return Number(match.collected) < 200 ? 'Returned' : 'Partial Delivered';
       }
-      const allowedStatuses = [
-        'Paid', 'Partial Delivery', 'Partial Delivered', 'Returned',
-        'Return Receved', 'Return Received', 'Exchanges', 'Lost'
-      ];
-      const existing = String(match.deliveryStatus || '').trim().replace(/^#\s*/, '');
-      const found = allowedStatuses.find((status) => status.toLowerCase() === existing.toLowerCase());
-      return found || 'Returned';
+      return match.deliveryStatus || 'Returned';
     }
 
     function renderVerificationRows(query) {
@@ -2494,10 +2488,19 @@
     async function saveVerification() {
       const current = verification;
       if (!current || current.locked) return;
-      const rows = current.matches.map((match) => ({
-        rowNumber: match.rowNumber,
-        deliveryStatus: match.deliveryStatus
-      }));
+      // Same sheet row can match more than once; send each row only once
+      const rowsByNumber = new Map();
+      current.matches.forEach((match) => {
+        const existing = rowsByNumber.get(match.rowNumber);
+        // If the same row appears twice with different statuses, keep the non-Paid one (safer)
+        if (!existing || existing.deliveryStatus === 'Paid') {
+          rowsByNumber.set(match.rowNumber, {
+            rowNumber: match.rowNumber,
+            deliveryStatus: match.deliveryStatus
+          });
+        }
+      });
+      const rows = Array.from(rowsByNumber.values());
 
       paymentDetailsSaveButton.disabled = true;
       paymentDetailsMessage.textContent = 'Saving payment verification...';
