@@ -2381,7 +2381,13 @@
       if (match.status === 'Partial Delivered') {
         return Number(match.collected) < 200 ? 'Returned' : 'Partial Delivered';
       }
-      return match.deliveryStatus || 'Returned';
+      const allowedStatuses = [
+        'Paid', 'Partial Delivery', 'Partial Delivered', 'Returned',
+        'Return Receved', 'Return Received', 'Exchanges', 'Lost'
+      ];
+      const existing = String(match.deliveryStatus || '').trim().replace(/^#\s*/, '');
+      const found = allowedStatuses.find((status) => status.toLowerCase() === existing.toLowerCase());
+      return found || 'Returned';
     }
 
     function renderVerificationRows(query) {
