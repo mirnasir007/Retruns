@@ -146,6 +146,8 @@
     body.full-access-locked .page-panel:not(#return) { display: none !important; }
     body.full-access-locked .sidebar { display: none; }
     body.full-access-locked .main-content { width: 100%; }
+    body.full-access-locked #returnDetailsSection .return-date-field,
+    body.full-access-locked #returnDetailsSection .return-details-search { display: none; }
     .full-access-lock-button { width: 100%; margin-top: 16px; }
     .full-access-login-form { display: grid; gap: 12px; }
     .full-access-login-form label { display: grid; gap: 6px; color: var(--text-2); text-align: left; font-size: 13px; font-weight: 600; }
@@ -1451,6 +1453,8 @@
         fullAccessToken = '';
         fullAccessUnlocked = false;
         document.body.classList.add('full-access-locked');
+        resetLockedReturnFilters();
+        if (!returnDetailsSection.hidden) loadReturnsData(false);
         fullAccessLockButton.hidden = true;
         document.querySelector('.nav-link[data-page="return"]').click();
       } catch (error) {
@@ -2945,7 +2949,18 @@
       document.getElementById('returnDetailsTab').classList.toggle('active', showDetails);
       document.getElementById('returnUpdateTab').setAttribute('aria-selected', String(!showDetails));
       document.getElementById('returnDetailsTab').setAttribute('aria-selected', String(showDetails));
-      if (showDetails) loadReturnsData(false);
+      if (showDetails) {
+        resetLockedReturnFilters();
+        loadReturnsData(false);
+      }
+    }
+
+    function resetLockedReturnFilters() {
+      if (fullAccessUnlocked) return;
+      const today = formatLocalDateInput(new Date());
+      returnDateFrom.value = today;
+      returnDateTo.value = today;
+      returnDetailsSearchInput.value = '';
     }
 
     async function loadReturnSheet() {
