@@ -702,7 +702,7 @@
           <article class="dashboard-stat-card"><span>Returned</span><div class="dashboard-stat-card-footer"><strong id="dashboardReturnedInvoices">—</strong><button type="button" class="refresh-btn dashboard-view-btn" data-dashboard-details="returned">View</button></div></article>
           <article class="dashboard-stat-card"><span>Partial Delivered</span><strong id="dashboardPartialDeliveredInvoices">—</strong></article>
           <article class="dashboard-stat-card"><span>Return Receved</span><strong id="dashboardReturnRecevedInvoices">—</strong></article>
-          <article class="dashboard-stat-card"><span>Exchanges</span><strong id="dashboardExchangeInvoices">—</strong></article>
+          <article class="dashboard-stat-card"><span>Exchanges</span><div class="dashboard-stat-card-footer"><strong id="dashboardExchangeInvoices">—</strong><button type="button" class="refresh-btn dashboard-view-btn" data-dashboard-details="exchange">View</button></div></article>
           <article class="dashboard-stat-card"><span>Unpaid</span><div class="dashboard-stat-card-footer"><strong id="dashboardUnpaidInvoices">—</strong><button type="button" class="refresh-btn dashboard-view-btn" data-dashboard-details="unpaid">View</button></div></article>
           <article class="dashboard-stat-card"><span>Paid</span><strong id="dashboardPaidInvoices">—</strong></article>
           <article class="dashboard-stat-card overdue"><span>Unpaid for 10+ Days</span><strong id="dashboardOverdueCount">—</strong></article>
@@ -1991,10 +1991,12 @@
     }
 
     async function openDashboardDetails(status) {
-      if (!['returned', 'unpaid'].includes(status)) return;
+      if (!['returned', 'unpaid', 'exchange'].includes(status)) return;
       const requestId = ++paymentDetailsRequestId;
       const courier = document.getElementById('dashboardCourierFilter').value;
-      const title = status === 'returned' ? 'Returned Invoices' : 'Unpaid Invoices';
+      const title = status === 'returned'
+        ? 'Returned Invoices'
+        : status === 'exchange' ? 'Exchange Invoices' : 'Unpaid Invoices';
       showPaymentDetails(title, `All ${status} invoice details from All Invoice`);
       paymentDetailsSearchForm.hidden = true;
       paymentDetailsTableWrap.querySelector('table').classList.add('dashboard-details-table');
@@ -2208,7 +2210,7 @@
       if (value === 'unpaid' || value.startsWith('partial')) return 'warning';
       if (value === 'returned' || value === 'return receved' || value === 'return received' ||
           value === 'lost' || value.startsWith('# return') || value === 'cancel') return 'danger';
-      if (value === 'exchanges') return 'info';
+      if (value === 'exchange' || value === 'exchanges') return 'info';
       return 'neutral';
     }
 
