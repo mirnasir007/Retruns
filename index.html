@@ -584,6 +584,17 @@
     .payment-details-summary span.tone-danger, .payment-details-summary span.tone-info { border: 1px solid transparent; }
     .details-table-wrap { min-height: 0; flex: 1; overflow: auto; }
     .details-table-wrap .invoice-table { width: max-content; min-width: 100%; }
+    .details-table-wrap .dashboard-details-table { width: 100%; table-layout: fixed; white-space: normal; }
+    .details-table-wrap .dashboard-details-table th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      padding: 8px 7px;
+      background: #f4f6fb;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .details-table-wrap .dashboard-details-table td { padding: 8px 7px; overflow-wrap: anywhere; }
     .details-message { margin: 0; padding: 10px; }
     .details-actions { display: flex; justify-content: flex-end; }
     .missing-invoice-status { color: var(--danger) !important; font-weight: 700; }
@@ -1281,9 +1292,8 @@
       'Note', 'Delivery Charge'
     ];
     const dashboardInvoiceHeaders = [
-      'Delivery Status', 'Merchant Order Id', 'RecipientName(*)', 'Recipient Phone(*)',
-      'Recipient Address(*)', 'Amount', 'Quantity', 'Product name', 'Instruction',
-      'Courier', 'Date', 'Payment Date', 'Payment Id', 'Note', 'Delivery Charge'
+      'Date', 'Delivery Status', 'Merchant Order Id', 'RecipientName(*)',
+      'Recipient Phone(*)', 'Amount', 'Courier'
     ];
     invoiceColumns.forEach((column) => {
       const th = document.createElement('th');
@@ -1352,6 +1362,7 @@
     let returnSearchActive = false;
     let returnDataRequestId = 0;
     let paymentDetailsRequestId = 0;
+    let dashboardDetailsState = null;
     let paymentSummaryRequestId = 0;
     let paymentChargeRequestId = 0;
     let dashboardRequestId = 0;
@@ -1948,6 +1959,8 @@
 
     function showPaymentDetails(title, subtitle) {
       if (paymentDetailsOverlay.hidden) previousBodyOverflow = document.body.style.overflow;
+      dashboardDetailsState = null;
+      paymentDetailsTableWrap.querySelector('table').classList.remove('dashboard-details-table');
       paymentDetailsTitle.textContent = title;
       paymentDetailsSubtitle.textContent = subtitle || '';
       paymentDetailsSubtitle.hidden = !subtitle;
@@ -1980,24 +1993,79 @@
       const title = status === 'returned' ? 'Returned Invoices' : 'Unpaid Invoices';
       showPaymentDetails(title, `All ${status} invoice details from All Invoice`);
       paymentDetailsSearchForm.hidden = true;
+      paymentDetailsTableWrap.querySelector('table').classList.add('dashboard-details-table');
+      dashboardDetailsState = { status, courier, offset: 0, hasMore: true, loading: false, totalCount: 0, requestId };
+      paymentDetailsHeaders.replaceChildren();
+      dashboardInvoiceHeaders.forEach((value) => {
+        const header = document.createElement('th');
+        header.textContent = value;
+        paymentDetailsHeaders.appendChild(header);
+      });
+      loadDashboardDetailsPage(dashboardDetailsState);
+    }
+
+    async function loadDashboardDetailsPage(state) {
+      if (state.loading || !state.hasMore) return;
+      state.loading = true;
+      const isFirstPage = state.offset === 0;
+      paymentDetailsMessage.className = 'invoice-message details-message';
+      paymentDetailsMessage.textContent = isFirstPage ? 'Loading details...' : 'Loading more records...';
+      paymentDetailsMessage.style.display = 'block';
       try {
-        const params = new URLSearchParams({ status, courier });
+        const params = new URLSearchParams({
+          status: state.status,
+          courier: state.courier,
+          offset: String(state.offset)
+        });
         const response = await apiFetch(`/api/dashboard/details?${params}`);
-        const result = await readJsonResponse(response, `Failed to load ${status} invoice details`);
-        if (requestId !== paymentDetailsRequestId) return;
-        if (!Array.isArray(result.invoices)) throw new Error('Server returned invalid invoice details.');
-        renderPaymentDetails(dashboardInvoiceHeaders, result.invoices.map((invoice) => invoice.values || []));
-        paymentDetailsSummary.hidden = true;
-        paymentDetailsSearchForm.hidden = true;
-        paymentDetailsSubtitle.textContent = `${result.invoices.length.toLocaleString()} records`;
+        const result = await readJsonResponse(response, `Failed to load ${state.status} invoice details`);
+        if (state.requestId !== paymentDetailsRequestId || dashboardDetailsState !== state) return;
+        if (!Array.isArray(result.invoices) || typeof result.hasMore !== 'boolean') {
+          throw new Error('Server returned invalid invoice details.');
+        }
+        result.invoices.forEach((invoice) => {
+          const row = document.createElement('tr');
+          (invoice.values || []).forEach((value) => {
+            const cell = document.createElement('td');
+            cell.textContent = value === undefined || value === null ? '' : String(value);
+            row.appendChild(cell);
+          });
+          paymentDetailsRows.appendChild(row);
+        });
+        state.offset += result.invoices.length;
+        state.hasMore = result.hasMore;
+        state.totalCount = Number(result.totalCount) || state.offset;
+        paymentDetailsTableWrap.hidden = state.offset === 0;
+        paymentDetailsSubtitle.textContent = state.hasMore
+          ? `Showing ${state.offset.toLocaleString()} of ${state.totalCount.toLocaleString()} records`
+          : `${state.totalCount.toLocaleString()} records`;
+        if (state.offset) {
+          paymentDetailsMessage.style.display = 'none';
+        } else {
+          paymentDetailsMessage.textContent = 'No details found.';
+        }
       } catch (error) {
-        if (requestId !== paymentDetailsRequestId) return;
-        paymentDetailsTableWrap.hidden = true;
+        if (state.requestId !== paymentDetailsRequestId || dashboardDetailsState !== state) return;
         paymentDetailsMessage.className = 'invoice-message details-message error';
         paymentDetailsMessage.textContent = error.message;
         paymentDetailsMessage.style.display = 'block';
+      } finally {
+        state.loading = false;
       }
     }
+
+    paymentDetailsTableWrap.addEventListener('scroll', () => {
+      const state = dashboardDetailsState;
+      if (
+        state &&
+        state.hasMore &&
+        !state.loading &&
+        paymentDetailsTableWrap.scrollHeight - paymentDetailsTableWrap.scrollTop -
+          paymentDetailsTableWrap.clientHeight < 120
+      ) {
+        loadDashboardDetailsPage(state);
+      }
+    });
 
     function renderPaymentDetails(headers, rows) {
       paymentDetailsData = { headers, rows: normalizePaymentDetailsRows(headers, rows) };
